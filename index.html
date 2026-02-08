@@ -186,6 +186,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /*── Animations ──*/
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+/*── Solution navigation ──*/
+.sol-nav{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.6rem;padding:.45rem .6rem;background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.08);border-radius:8px}
+.sol-nav-btn{background:none;border:none;color:var(--text-muted);font-size:.85rem;cursor:pointer;padding:2px 8px;border-radius:4px;transition:all .2s;line-height:1;font-family:'DM Sans',sans-serif}
+.sol-nav-btn:hover:not(:disabled){color:var(--text-primary);background:var(--bg-hover)}
+.sol-nav-btn:disabled{opacity:.2;cursor:default}
+.sol-page{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-secondary);letter-spacing:.04em}
+.sol-dismiss-btn{background:none;border:1px solid rgba(239,68,68,0.15);color:var(--text-muted);font-size:.58rem;cursor:pointer;padding:3px 10px;border-radius:5px;transition:all .2s;font-family:'DM Sans',sans-serif;letter-spacing:.02em}
+.sol-dismiss-btn:hover{color:#ef4444;background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.3)}
+.sol-dismissed-info{text-align:center;margin-top:.5rem;font-size:.58rem;color:var(--text-muted)}
+.sol-dismissed-info a{color:var(--accent);cursor:pointer;text-decoration:none}
+.sol-dismissed-info a:hover{text-decoration:underline}
+.sol-empty{padding:1.2rem .8rem;text-align:center;font-size:.72rem;color:var(--text-muted);line-height:1.6}
+
+/*── Analytics: Time Offered ──*/
+.analytics-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.analytics-name{font-size:.68rem;font-weight:500;width:54px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.analytics-bar-bg{flex:1;height:14px;background:rgba(255,255,255,0.03);border-radius:3px;overflow:hidden;position:relative}
+.analytics-bar-fill{height:100%;border-radius:3px;transition:width .6s ease-out}
+.analytics-hours{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--text-muted);width:26px;flex-shrink:0}
+.analytics-avg{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--text-muted);opacity:.35;z-index:2;pointer-events:none}
+.analytics-avg-label{position:absolute;top:-12px;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.45rem;color:var(--text-muted);white-space:nowrap}
+.analytics-stats{text-align:center;margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--text-muted);letter-spacing:.02em}
 </style>
 </head>
 <body>
@@ -298,6 +321,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <div class="panel-title">Recommended</div>
         <div id="solutions"></div>
       </div>
+      <div class="panel">
+        <div class="panel-title">Time Offered</div>
+        <div id="analytics"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -325,6 +352,10 @@ let STATE = {
   activePerson: null,
   // config
   numPeople: 0,
+  // solution navigation
+  dismissed: new Set(),
+  solIdx: 0,
+  currentResults: null,
 };
 
 const PCOLORS = ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171',
@@ -489,7 +520,9 @@ function solve() {
       const endM = endSlot.m + 15;
       const endH = endSlot.h + Math.floor(endM / 60);
 
+      const key = `${dayKey}:${windowSlots[0].h}:${windowSlots[0].m}`;
       windows.push({
+        key,
         dayKey, day: windowSlots[0].day,
         dayName: DAY_LABELS[windowSlots[0].day],
         startH: windowSlots[0].h, startM: windowSlots[0].m,
@@ -506,8 +539,8 @@ function solve() {
 
   const results = { single: [], pairs: [], coverage: 0, suggestion: null };
 
-  // Single best
-  results.single = windows.slice(0, 5);
+  // Single best — return more options for browsing
+  results.single = windows.slice(0, 12);
 
   // Check if single meeting covers everyone
   const bestSingle = windows[0];
@@ -531,6 +564,7 @@ function solve() {
         const score = union.size * 1000 + Math.min(a.count, b.count);
         const diffDay = a.dayKey !== b.dayKey;
         bestPairs.push({
+          key: `${a.key}|${b.key}`,
           a, b, union, uncovered, score, diffDay,
           coverage: union.size,
         });
@@ -542,7 +576,7 @@ function solve() {
       if (x.diffDay !== y.diffDay) return x.diffDay ? -1 : 1;
       return y.score - x.score;
     });
-    results.pairs = bestPairs.slice(0, 3);
+    results.pairs = bestPairs.slice(0, 10);
   }
 
   // Coverage
@@ -690,70 +724,113 @@ function getTotalHours(name) {
   return count * 0.25;
 }
 
+function updateSolutions() {
+  STATE.currentResults = solve();
+  STATE.solIdx = 0;
+  renderSolutions();
+}
+
+function getActiveOptions() {
+  const r = STATE.currentResults;
+  if (!r) return { options: [], usePairs: false };
+  const usePairs = r.numMeetings === 2 && r.pairs.length > 0;
+  const raw = usePairs ? r.pairs : r.single;
+  const options = raw.filter(o => !STATE.dismissed.has(o.key));
+  return { options, usePairs };
+}
+
 function renderSolutions() {
-  const results = solve();
   const container = document.getElementById('solutions');
   container.innerHTML = '';
-
-  // Clear old outlines
   document.querySelectorAll('.sol-outline').forEach(e => e.remove());
 
-  const usePairs = results.numMeetings === 2 && results.pairs.length > 0;
+  const { options, usePairs } = getActiveOptions();
+
+  if (!STATE.currentResults || (STATE.currentResults.single.length === 0 && STATE.currentResults.pairs.length === 0)) {
+    container.innerHTML = '<div class="sol-empty">No valid windows found.<br>Try adjusting constraints.</div>';
+    return;
+  }
+
+  if (options.length === 0) {
+    container.innerHTML = '<div class="sol-empty">All options dismissed.<br><a onclick="resetDismissed()" style="color:var(--accent);cursor:pointer">Reset and show all</a></div>';
+    return;
+  }
+
+  // Clamp index
+  if (STATE.solIdx >= options.length) STATE.solIdx = options.length - 1;
+  if (STATE.solIdx < 0) STATE.solIdx = 0;
+
+  const current = options[STATE.solIdx];
+  const total = options.length;
+
+  // Navigation bar
+  const navHtml = `<div class="sol-nav">
+    <button class="sol-nav-btn" onclick="solNav(-1)" ${STATE.solIdx === 0 ? 'disabled' : ''}>&#9664;</button>
+    <span class="sol-page">Option ${STATE.solIdx + 1} of ${total}</span>
+    <button class="sol-nav-btn" onclick="solNav(1)" ${STATE.solIdx >= total - 1 ? 'disabled' : ''}>&#9654;</button>
+  </div>`;
+  container.insertAdjacentHTML('beforeend', navHtml);
 
   if (usePairs) {
-    const pair = results.pairs[0];
-    renderSolCard(container, pair.a, 'Meeting 1', 1);
-    renderSolCard(container, pair.b, 'Meeting 2', 2);
+    renderSolCard(container, current.a);
+    renderSolCard(container, current.b);
 
     // Breakdown
-    const onlyA = [...pair.a.attendees].filter(n => !pair.b.attendees.has(n));
-    const onlyB = [...pair.b.attendees].filter(n => !pair.a.attendees.has(n));
-    const both = [...pair.a.attendees].filter(n => pair.b.attendees.has(n));
+    const onlyA = [...current.a.attendees].filter(n => !current.b.attendees.has(n));
+    const onlyB = [...current.b.attendees].filter(n => !current.a.attendees.has(n));
+    const both = [...current.a.attendees].filter(n => current.b.attendees.has(n));
 
     let breakdownHtml = '<div class="sol-breakdown">';
     if (both.length) breakdownHtml += `<span>Both:</span> ${both.map(n=>shortName(n)).join(', ')}<br>`;
-    if (onlyA.length) breakdownHtml += `<span>Only Meeting 1:</span> ${onlyA.map(n=>shortName(n)).join(', ')}<br>`;
-    if (onlyB.length) breakdownHtml += `<span>Only Meeting 2:</span> ${onlyB.map(n=>shortName(n)).join(', ')}`;
+    if (onlyA.length) breakdownHtml += `<span>Only ${current.a.dayName}:</span> ${onlyA.map(n=>shortName(n)).join(', ')}<br>`;
+    if (onlyB.length) breakdownHtml += `<span>Only ${current.b.dayName}:</span> ${onlyB.map(n=>shortName(n)).join(', ')}`;
     breakdownHtml += '</div>';
     container.insertAdjacentHTML('beforeend', breakdownHtml);
 
-    const covHtml = `<div class="sol-coverage"><strong>${pair.coverage}/${STATE.numPeople}</strong> members covered</div>`;
+    const covHtml = `<div class="sol-coverage"><strong>${current.coverage}/${STATE.numPeople}</strong> members covered</div>`;
     container.insertAdjacentHTML('beforeend', covHtml);
 
-    if (pair.uncovered.length > 0) {
+    if (current.uncovered.length > 0) {
       container.insertAdjacentHTML('beforeend',
         `<div class="sol-coverage" style="color:#ef4444;border-color:rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)">
-          Missing: ${pair.uncovered.map(n=>shortName(n)).join(', ')}
+          Missing: ${current.uncovered.map(n=>shortName(n)).join(', ')}
         </div>`);
     }
 
-    // Draw outlines
-    drawOutline(pair.a, 'MTG 1');
-    drawOutline(pair.b, 'MTG 2');
+    drawOutline(current.a, 'A');
+    drawOutline(current.b, 'B');
 
-  } else if (results.single.length > 0) {
-    const best = results.single[0];
-    renderSolCard(container, best, 'Best Meeting', 1);
-    const covHtml = `<div class="sol-coverage"><strong>${best.count}/${STATE.numPeople}</strong> attend</div>`;
-    container.insertAdjacentHTML('beforeend', covHtml);
-    if (best.missing.size > 0) {
-      container.insertAdjacentHTML('beforeend',
-        `<div class="sol-coverage" style="color:#ef4444;border-color:rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)">
-          Missing: ${[...best.missing].map(n=>shortName(n)).join(', ')}
-        </div>`);
-    }
-    drawOutline(best, 'BEST');
   } else {
-    container.innerHTML = '<div style="font-size:.75rem;color:var(--text-muted);padding:1rem;text-align:center">No valid windows found.<br>Try adjusting constraints.</div>';
+    renderSolCard(container, current);
+    const covHtml = `<div class="sol-coverage"><strong>${current.count}/${STATE.numPeople}</strong> attend</div>`;
+    container.insertAdjacentHTML('beforeend', covHtml);
+    if (current.missing && current.missing.size > 0) {
+      container.insertAdjacentHTML('beforeend',
+        `<div class="sol-coverage" style="color:#ef4444;border-color:rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)">
+          Missing: ${[...current.missing].map(n=>shortName(n)).join(', ')}
+        </div>`);
+    }
+    drawOutline(current, 'BEST');
   }
 
-  if (results.suggestion) {
+  // Dismiss button
+  container.insertAdjacentHTML('beforeend',
+    `<button class="sol-dismiss-btn" onclick="solDismiss()" style="display:block;width:100%;margin-top:.5rem">Not this one</button>`);
+
+  // Dismissed count
+  if (STATE.dismissed.size > 0) {
     container.insertAdjacentHTML('beforeend',
-      `<div class="suggestion"><strong>💡 Tip:</strong> ${results.suggestion}</div>`);
+      `<div class="sol-dismissed-info">${STATE.dismissed.size} dismissed · <a onclick="resetDismissed()">reset</a></div>`);
+  }
+
+  // Suggestion from solver
+  if (STATE.currentResults.suggestion) {
+    container.insertAdjacentHTML('beforeend',
+      `<div class="suggestion"><strong>Tip:</strong> ${STATE.currentResults.suggestion}</div>`);
   }
 }
 
-function renderSolCard(container, win, title, num) {
+function renderSolCard(container, win) {
   const card = document.createElement('div');
   card.className = 'sol-card';
   const timeRange = `${formatTime(win.startH, win.startM)} – ${formatTime(win.endH, win.endM)}`;
@@ -762,12 +839,63 @@ function renderSolCard(container, win, title, num) {
     chipsHtml += `<span class="sol-chip" style="background:${pcolor(name)}22;color:${pcolor(name)}">${shortName(name)}</span>`;
   }
   card.innerHTML = `
-    <div class="sol-title">${title}</div>
     <div class="sol-time">${win.dayName} · ${timeRange}</div>
     <div class="sol-chips">${chipsHtml}</div>
     <div class="sol-note">${win.count}/${STATE.numPeople} members</div>
   `;
   container.appendChild(card);
+}
+
+function solNav(delta) {
+  const { options } = getActiveOptions();
+  STATE.solIdx = Math.max(0, Math.min(options.length - 1, STATE.solIdx + delta));
+  renderSolutions();
+}
+
+function solDismiss() {
+  const { options } = getActiveOptions();
+  if (options.length === 0) return;
+  const current = options[STATE.solIdx];
+  STATE.dismissed.add(current.key);
+  // Stay at same index (next option slides in), or clamp
+  renderSolutions();
+}
+
+function resetDismissed() {
+  STATE.dismissed.clear();
+  STATE.solIdx = 0;
+  renderSolutions();
+}
+
+function renderAnalytics() {
+  const el = document.getElementById('analytics');
+  if (!el) return;
+
+  const sorted = [...STATE.names].sort((a,b) => getTotalHours(b) - getTotalHours(a));
+  const hours = sorted.map(n => getTotalHours(n));
+  const maxH = Math.max(...hours);
+  const avgH = hours.reduce((a,b) => a+b, 0) / hours.length;
+  const minH = Math.min(...hours);
+
+  let html = '<div style="position:relative">';
+  sorted.forEach((name, i) => {
+    const h = hours[i];
+    const pct = maxH > 0 ? (h / maxH) * 100 : 0;
+    html += `<div class="analytics-row">
+      <div class="analytics-name" style="color:${pcolor(name)}">${shortName(name)}</div>
+      <div class="analytics-bar-bg">
+        <div class="analytics-bar-fill" style="width:${pct}%;background:${pcolor(name)};opacity:.7"></div>
+      </div>
+      <div class="analytics-hours">${h.toFixed(0)}h</div>
+    </div>`;
+  });
+
+  // Average reference line
+  const avgPct = maxH > 0 ? (avgH / maxH) * 100 : 0;
+  html += '</div>';
+  html += `<div class="analytics-stats">avg ${avgH.toFixed(0)}h · range ${minH.toFixed(0)}–${maxH.toFixed(0)}h</div>`;
+
+  el.innerHTML = html;
 }
 
 function drawOutline(win, label) {
@@ -862,7 +990,7 @@ function onCellClick(e) {
         cell.classList.add('blocked');
       }
       renderBlockedList();
-      renderSolutions();
+      updateSolutions();
     }
   }
 }
@@ -886,7 +1014,7 @@ function renderBlockedList() {
       const cell = document.querySelector(`.cell[data-slot-key="${key}"]`);
       if (cell) cell.classList.remove('blocked');
       renderBlockedList();
-      renderSolutions();
+      updateSolutions();
     };
     el.appendChild(chip);
   }
@@ -934,11 +1062,11 @@ function toggleRequired(name) {
   document.querySelectorAll('.person-row').forEach(r => {
     r.classList.toggle('required', STATE.required.has(r.dataset.person));
   });
-  renderSolutions();
+  updateSolutions();
 }
 
 function onConstraintChange() {
-  renderSolutions();
+  updateSolutions();
 }
 
 function goHome() {
@@ -967,7 +1095,7 @@ function init() {
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      if (document.getElementById('solver').classList.contains('active')) renderSolutions();
+      if (document.getElementById('solver').classList.contains('active')) updateSolutions();
     }, 150);
   });
 }
@@ -982,7 +1110,8 @@ function launchSolver(raw) {
   renderGrid();
   renderLegend();
   renderPeople();
-  renderSolutions();
+  renderAnalytics();
+  updateSolutions();
 }
 
 /*═══════════════════════════════════════════════════════════════
@@ -990,7 +1119,7 @@ function launchSolver(raw) {
 ═══════════════════════════════════════════════════════════════*/
 function loadDemo() {
   // Generate demo data matching our writing meeting When2Meet
-  const names = ["Deep","Doug Adamson","Jakiya","Jinzhou","Mahdad","Mothana Alomari","Rumesha","Umaiya"];
+  const names = ["Alex","Blake","Casey","Dana","Ellis","Farid","Grace","Harper"];
   const ids = [1,2,3,4,5,6,7,8];
   const baseTs = 279795600; // Monday 9:00 UTC (When2Meet epoch)
   const times = [];
