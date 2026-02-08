@@ -973,17 +973,38 @@ function computeInsights() {
     insights.push({ icon: '🚢', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${hrs > 0 ? hrs.toFixed(0) + 'h' : 'never'}</span> — hardest to get in a room together` });
   }
 
-  // --- 5. Unanimous Slots ---
-  let unanimousCount = 0;
-  for (const s of slots) {
-    if (s.available.size === N) unanimousCount++;
-  }
+  // --- 5. Unanimous Windows ---
+  // Group contiguous unanimous slots into windows so Mon 9:00-10:30 = 1 window, not 6 "slots"
   if (N >= 3) {
-    if (unanimousCount === 0) {
-      insights.push({ icon: '🎯', text: `<span class="warn">Zero</span> unanimous slots — no single 15-min window works for everyone` });
+    const unanBlocks = [];
+    for (const dk of STATE.days) {
+      const daySlots = STATE.dayMap[dk].slots;
+      let blockStart = null, blockLen = 0;
+      for (let i = 0; i < daySlots.length; i++) {
+        if (daySlots[i].available.size === N) {
+          if (blockStart === null) blockStart = i;
+          blockLen++;
+        } else {
+          if (blockStart !== null) {
+            unanBlocks.push({ dayKey: dk, dayName: STATE.dayNames[STATE.days.indexOf(dk)], start: daySlots[blockStart], len: blockLen });
+            blockStart = null; blockLen = 0;
+          }
+        }
+      }
+      if (blockStart !== null) {
+        unanBlocks.push({ dayKey: dk, dayName: STATE.dayNames[STATE.days.indexOf(dk)], start: daySlots[blockStart], len: blockLen });
+      }
+    }
+    if (unanBlocks.length === 0) {
+      insights.push({ icon: '🎯', text: `<span class="warn">Zero</span> unanimous windows — no contiguous block works for everyone` });
     } else {
-      const uHrs = (unanimousCount * 0.25).toFixed(1).replace(/\.0$/, '');
-      insights.push({ icon: '🎯', text: `<span class="hl">${unanimousCount}</span> unanimous slots (${uHrs}h) where the whole team is free` });
+      const descs = unanBlocks.map(b => {
+        const dur = (b.len * 0.25);
+        const durStr = dur >= 1 ? `${dur}h` : `${dur * 60}min`;
+        return `${b.dayName} ${shortTime(b.start.h, b.start.m)} (${durStr})`;
+      });
+      const label = unanBlocks.length === 1 ? '1 unanimous window' : `${unanBlocks.length} unanimous windows`;
+      insights.push({ icon: '🎯', text: `<span class="hl">${label}</span> where the whole team is free: ${descs.join(', ')}` });
     }
   }
 
