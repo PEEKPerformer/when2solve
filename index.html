@@ -83,10 +83,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .ctrl-select:hover{border-color:var(--border-light)}
 .ctrl-select:focus{outline:none;border-color:var(--accent)}
 .ctrl-divider{width:1px;height:24px;background:var(--border);margin:0 .3rem}
-.ctrl-radio{display:flex;gap:2px;background:var(--bg-deep);border-radius:6px;padding:2px;border:1px solid var(--border)}
-.ctrl-radio label{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:.3rem .6rem;border-radius:4px;cursor:pointer;color:var(--text-muted);transition:all .2s;white-space:nowrap;user-select:none}
-.ctrl-radio input{display:none}
-.ctrl-radio input:checked+label{background:var(--bg-hover);color:var(--text-primary)}
 
 .blocked-list{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
 .blocked-chip{font-family:'JetBrains Mono',monospace;font-size:.55rem;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;gap:3px;cursor:pointer;transition:all .2s}
@@ -142,9 +138,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /*── Insights ──*/
 .insights-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:.8rem 1rem;margin-bottom:1rem}
-.insight-item{display:flex;align-items:baseline;gap:.5rem;padding:.25rem 0;font-size:.7rem;color:var(--text-secondary);line-height:1.5}
-.insight-marker{flex-shrink:0;color:var(--text-muted);font-size:.65rem}
+.insight-item{display:flex;align-items:baseline;gap:.5rem;padding:.35rem 0;font-size:.72rem;color:var(--text-secondary);line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.03)}
+.insight-item:last-child{border-bottom:none}
+.insight-icon{flex-shrink:0;width:1.1em;text-align:center;font-size:.75rem}
 .insight-item strong{color:var(--text-primary);font-weight:600}
+.insight-item .hl{color:#22d3ee}
+.insight-item .warn{color:#fbbf24}
+.insight-item .soft{color:var(--text-muted);font-size:.65rem}
 
 /*── Heatmap (collapsible) ──*/
 .heatmap-toggle{display:flex;align-items:center;gap:.4rem;padding:.5rem 0;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-muted);cursor:pointer;transition:color .2s;user-select:none}
@@ -287,16 +287,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <option value="1">1</option>
         <option value="2">2</option>
       </select>
-    </div>
-    <div class="ctrl-divider"></div>
-    <div class="ctrl-group">
-      <span class="ctrl-label">Goal</span>
-      <div class="ctrl-radio">
-        <input type="radio" name="goal" id="goalMax" value="max" checked onchange="onConstraintChange()">
-        <label for="goalMax">Max attendance</label>
-        <input type="radio" name="goal" id="goalCover" value="cover" onchange="onConstraintChange()">
-        <label for="goalCover">Cover everyone</label>
-      </div>
     </div>
     <div class="ctrl-divider"></div>
     <div class="ctrl-group">
@@ -488,7 +478,6 @@ function windowsOverlap(a, b) {
 function solve() {
   const duration = parseInt(document.getElementById('ctrlDuration').value);
   const meetingsPref = parseInt(document.getElementById('ctrlMeetings').value);
-  const goal = document.querySelector('input[name="goal"]:checked').value;
   const required = STATE.required;
   const blocked = STATE.blocked;
   const allNames = new Set(STATE.names);
@@ -884,10 +873,9 @@ function renderInsights(container) {
   if (insights.length === 0) return;
   const panel = document.createElement('div');
   panel.className = 'insights-panel';
-  let html = '<div class="section-head" style="margin-top:0;margin-bottom:.4rem">Insights</div>';
+  let html = '<div class="section-head" style="margin-top:0;margin-bottom:.4rem">Scheduling Insights</div>';
   insights.forEach(ins => {
-    const m = ins.type === 'suggestion' ? '&rarr;' : '&middot;';
-    html += `<div class="insight-item"><span class="insight-marker">${m}</span><span>${ins.text}</span></div>`;
+    html += `<div class="insight-item"><span class="insight-icon">${ins.icon}</span><span>${ins.text}</span></div>`;
   });
   panel.innerHTML = html;
   container.appendChild(panel);
@@ -895,26 +883,178 @@ function renderInsights(container) {
 
 function computeInsights() {
   const insights = [];
-  const hours = STATE.names.map(n => ({ name: n, h: getTotalHours(n) }));
+  const names = STATE.names;
+  const slots = STATE.slots;
+  const N = names.length;
+  if (N === 0 || slots.length === 0) return insights;
+
+  // --- Precompute per-person data ---
+  const hours = names.map(n => ({ name: n, h: getTotalHours(n) }));
   hours.sort((a,b) => a.h - b.h);
   const least = hours[0], most = hours[hours.length - 1];
-  if (least.h < most.h * 0.6) {
-    insights.push({ type: 'flex', text: `<strong>${shortName(least.name)}</strong> offered ${least.h.toFixed(0)}h — least flexible on the team` });
+
+  // Per-person per-day hours and earliest/latest times
+  const personDayH = {};   // name → { dayKey → hours }
+  const personEarliest = {};  // name → earliest hour (decimal)
+  const personLatest = {};    // name → latest hour (decimal)
+  for (const n of names) {
+    personDayH[n] = {};
+    personEarliest[n] = 24;
+    personLatest[n] = 0;
   }
-  let minOv = Infinity, hardPair = null;
-  for (let i = 0; i < STATE.names.length; i++) {
-    for (let j = i + 1; j < STATE.names.length; j++) {
-      let c = 0;
-      for (const s of STATE.slots) { if (s.available.has(STATE.names[i]) && s.available.has(STATE.names[j])) c++; }
-      if (c < minOv) { minOv = c; hardPair = [STATE.names[i], STATE.names[j]]; }
+  for (const s of slots) {
+    const t = s.h + s.m / 60;
+    for (const n of s.available) {
+      personDayH[n][s.dayKey] = (personDayH[n][s.dayKey] || 0) + 0.25;
+      if (t < personEarliest[n]) personEarliest[n] = t;
+      if (t + 0.25 > personLatest[n]) personLatest[n] = t + 0.25;
     }
   }
+
+  // Pairwise overlap matrix
+  const overlap = {};
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      let c = 0;
+      for (const s of slots) {
+        if (s.available.has(names[i]) && s.available.has(names[j])) c++;
+      }
+      overlap[`${i}:${j}`] = c;
+    }
+  }
+
+  // --- 1. Early Bird / Night Owl ---
+  let earliestPerson = names[0], latestPerson = names[0];
+  for (const n of names) {
+    if (personEarliest[n] < personEarliest[earliestPerson]) earliestPerson = n;
+    if (personLatest[n] > personLatest[latestPerson]) latestPerson = n;
+  }
+  if (earliestPerson !== latestPerson) {
+    const eTime = formatTime(Math.floor(personEarliest[earliestPerson]), Math.round((personEarliest[earliestPerson] % 1) * 60));
+    const lH = personLatest[latestPerson];
+    const lTime = formatTime(Math.floor(lH), Math.round((lH % 1) * 60));
+    insights.push({ icon: '🌅', text: `<strong>${shortName(earliestPerson)}</strong> is the early bird (from ${eTime}) — <strong>${shortName(latestPerson)}</strong> is the night owl (until ${lTime})` });
+  }
+
+  // --- 2. Morning vs Afternoon team ---
+  let morningSlots = 0, afternoonSlots = 0;
+  for (const s of slots) {
+    const count = s.available.size;
+    if (s.h < 12) morningSlots += count;
+    else afternoonSlots += count;
+  }
+  const total = morningSlots + afternoonSlots;
+  if (total > 0) {
+    const mPct = Math.round(morningSlots / total * 100);
+    const aPct = 100 - mPct;
+    const skew = mPct > 60 ? 'mornings' : aPct > 60 ? 'afternoons' : null;
+    if (skew) {
+      insights.push({ icon: skew === 'mornings' ? '☀️' : '🌙', text: `The team skews toward <strong>${skew}</strong> — ${Math.max(mPct,aPct)}% of availability is ${skew === 'mornings' ? 'before noon' : 'after noon'}` });
+    }
+  }
+
+  // --- 3. Best Buds (most overlap pair) ---
+  let maxOv = 0, bestPair = null;
+  let minOv = Infinity, hardPair = null;
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const c = overlap[`${i}:${j}`];
+      if (c > maxOv) { maxOv = c; bestPair = [names[i], names[j]]; }
+      if (c < minOv) { minOv = c; hardPair = [names[i], names[j]]; }
+    }
+  }
+  if (bestPair && maxOv > 0) {
+    insights.push({ icon: '🤝', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${(maxOv * 0.25).toFixed(0)}h</span> — easiest pair to co-schedule` });
+  }
+
+  // --- 4. Ships in the Night (hardest pair) ---
   if (hardPair && minOv * 0.25 <= 4) {
-    insights.push({ type: 'conflict', text: `<strong>${shortName(hardPair[0])}</strong> + <strong>${shortName(hardPair[1])}</strong> overlap only ${(minOv * 0.25).toFixed(0)}h — hardest pair to co-schedule` });
+    const hrs = (minOv * 0.25);
+    insights.push({ icon: '🚢', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${hrs > 0 ? hrs.toFixed(0) + 'h' : 'never'}</span> — hardest to get in a room together` });
   }
+
+  // --- 5. Unanimous Slots ---
+  let unanimousCount = 0;
+  for (const s of slots) {
+    if (s.available.size === N) unanimousCount++;
+  }
+  if (N >= 3) {
+    if (unanimousCount === 0) {
+      insights.push({ icon: '🎯', text: `<span class="warn">Zero</span> unanimous slots — no single 15-min window works for everyone` });
+    } else {
+      const uHrs = (unanimousCount * 0.25).toFixed(1).replace(/\.0$/, '');
+      insights.push({ icon: '🎯', text: `<span class="hl">${unanimousCount}</span> unanimous slots (${uHrs}h) where the whole team is free` });
+    }
+  }
+
+  // --- 6. The Linchpin ---
+  // Who, if removed, opens the most new full-attendance windows?
+  const r = STATE.currentResults;
+  if (r && r.single.length > 0) {
+    const bestCount = r.single[0].count;
+    if (bestCount < N) {
+      let bestGain = 0, linchpin = null;
+      for (const n of names) {
+        // How many windows reach (N-1) if we ignore this person?
+        let fullWithout = 0;
+        for (const w of (r.windows || r.single)) {
+          const without = w.attendees.has(n) ? w.count - 1 : w.count;
+          if (without >= N - 1) fullWithout++;
+        }
+        if (fullWithout > bestGain) { bestGain = fullWithout; linchpin = n; }
+      }
+      if (linchpin && bestGain > 0) {
+        insights.push({ icon: '🔑', text: `<strong>The linchpin:</strong> ${shortName(linchpin)} — removing them as required would unlock <span class="hl">${bestGain}</span> perfect-attendance options` });
+      }
+    }
+  }
+
+  // --- 7. Ghost Day ---
+  const dayTotals = {};
+  for (const dk of STATE.days) {
+    dayTotals[dk] = 0;
+    for (const s of STATE.dayMap[dk].slots) {
+      dayTotals[dk] += s.available.size;
+    }
+  }
+  const dayEntries = Object.entries(dayTotals);
+  if (dayEntries.length > 1) {
+    dayEntries.sort((a,b) => a[1] - b[1]);
+    const [worstDk, worstCount] = dayEntries[0];
+    const [bestDk, bestCount] = dayEntries[dayEntries.length - 1];
+    const dropPct = Math.round((1 - worstCount / bestCount) * 100);
+    if (dropPct > 25) {
+      const worstName = STATE.dayNames[STATE.days.indexOf(worstDk)];
+      const bestName = STATE.dayNames[STATE.days.indexOf(bestDk)];
+      insights.push({ icon: '👻', text: `<strong>Ghost day:</strong> ${worstName} has ${dropPct}% less availability than ${bestName}` });
+    }
+  }
+
+  // --- 8. The Minimalist / The Accommodator ---
+  if (least.h < most.h * 0.5 && N >= 4) {
+    insights.push({ icon: '📐', text: `<strong>${shortName(least.name)}</strong> offered ${least.h.toFixed(0)}h — <strong>${shortName(most.name)}</strong> offered ${most.h.toFixed(0)}h <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
+  }
+
+  // --- 9. "If only..." nudge ---
   if (STATE.currentResults && STATE.currentResults.suggestion) {
-    insights.push({ type: 'suggestion', text: STATE.currentResults.suggestion });
+    insights.push({ icon: '💡', text: STATE.currentResults.suggestion });
   }
+
+  // --- 10. Lunch Hour Crunch ---
+  let lunchAvail = 0, lunchSlots = 0;
+  for (const s of slots) {
+    if (s.h >= 12 && s.h < 13) {
+      lunchSlots++;
+      lunchAvail += s.available.size;
+    }
+  }
+  if (lunchSlots > 0) {
+    const lunchPct = Math.round(lunchAvail / (lunchSlots * N) * 100);
+    if (lunchPct < 50) {
+      insights.push({ icon: '🍽️', text: `Only <span class="warn">${lunchPct}%</span> availability over the lunch hour (12–1 PM) — most of the team blocks it` });
+    }
+  }
+
   return insights;
 }
 
