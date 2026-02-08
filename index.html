@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When2Solve — When2Meet Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/*═══════════════════════════════════════════════════════════════
+  RESET & ROOT
+═══════════════════════════════════════════════════════════════*/
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#0a0e17;--bg-card:#111827;--bg-cell:#1a2235;--bg-hover:#243049;
+  --border:#1e293b;--border-light:#334155;
+  --text-primary:#e2e8f0;--text-secondary:#94a3b8;--text-muted:#64748b;
+  --accent:#22d3ee;--accent-dim:rgba(34,211,238,0.15);
+  --heat-0:#111827;--heat-1:#1e1a2e;--heat-2:#2d1f3d;--heat-3:#4c1d6e;
+  --heat-4:#7c2d8e;--heat-5:#b83a6a;--heat-6:#e04842;--heat-7:#f59e0b;--heat-8:#fbbf24;
+  --p0:#f472b6;--p1:#60a5fa;--p2:#a78bfa;--p3:#34d399;
+  --p4:#fbbf24;--p5:#fb923c;--p6:#2dd4bf;--p7:#f87171;
+}
+html{font-size:15px}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg-deep);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 25% 15%,rgba(124,45,142,0.07)0%,transparent 55%),radial-gradient(ellipse at 75% 85%,rgba(6,182,212,0.04)0%,transparent 55%);pointer-events:none;z-index:0}
+::selection{background:rgba(34,211,238,0.3);color:#fff}
+
+/*═══════════════════════════════════════════════════════════════
+  LANDING PAGE
+═══════════════════════════════════════════════════════════════*/
+.landing{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center}
+.landing-inner{max-width:680px;animation:fadeUp .8s ease-out}
+.logo{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem;opacity:.8}
+.landing h1{font-size:clamp(2.4rem,6vw,3.8rem);font-weight:700;letter-spacing:-.04em;line-height:1.1;margin-bottom:.6rem}
+.landing h1 .grad{background:linear-gradient(135deg,#e2e8f0 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.landing .tagline{font-size:1.1rem;color:var(--text-secondary);font-weight:300;margin-bottom:3rem;font-style:italic}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.2rem;margin-bottom:3rem;text-align:left}
+.step{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.3rem;position:relative;overflow:hidden;transition:border-color .3s,transform .3s}
+.step:hover{border-color:var(--border-light);transform:translateY(-2px)}
+.step::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:.4}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem;font-weight:600}
+.step-title{font-weight:600;font-size:.95rem;margin-bottom:.3rem}
+.step-desc{font-size:.78rem;color:var(--text-muted);line-height:1.5}
+
+/* Bookmarklet button */
+.bm-container{margin-bottom:2rem}
+.bm-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.8rem}
+.bm-button{display:inline-block;padding:.85rem 2rem;background:linear-gradient(145deg,#1a2a40,#0f1a2a);border:1.5px solid var(--accent);border-radius:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;letter-spacing:.04em;text-decoration:none;cursor:grab;transition:all .3s ease;box-shadow:0 0 20px rgba(34,211,238,0.1),0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;user-select:none}
+.bm-button:hover{transform:translateY(-3px);box-shadow:0 0 35px rgba(34,211,238,0.2),0 8px 30px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08);background:linear-gradient(145deg,#1e3350,#132238)}
+.bm-button:active{cursor:grabbing;transform:translateY(-1px)}
+.bm-button::before{content:'';position:absolute;inset:-1px;border-radius:11px;background:linear-gradient(135deg,rgba(34,211,238,0.2),transparent 60%);z-index:-1;opacity:0;transition:opacity .3s}
+.bm-button:hover::before{opacity:1}
+.bm-hint{font-size:.7rem;color:var(--text-muted);margin-top:.8rem}
+
+.landing-footer{font-size:.7rem;color:var(--text-muted);margin-top:2rem;line-height:1.6}
+.landing-footer a{color:var(--accent);text-decoration:none}
+
+/* Demo button */
+.demo-btn{display:inline-block;margin-top:1rem;padding:.55rem 1.4rem;background:transparent;border:1px solid var(--border-light);border-radius:8px;color:var(--text-secondary);font-size:.78rem;font-weight:500;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.demo-btn:hover{border-color:var(--text-muted);color:var(--text-primary);background:rgba(255,255,255,0.02)}
+
+/*═══════════════════════════════════════════════════════════════
+  SOLVER VIEW
+═══════════════════════════════════════════════════════════════*/
+.solver{display:none;position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:1.2rem}
+.solver.active{display:block}
+.landing.hidden{display:none}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.8rem;animation:fadeDown .5s ease-out}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.topbar-brand{font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;color:var(--accent);letter-spacing:.06em;cursor:pointer;transition:opacity .2s}
+.topbar-brand:hover{opacity:.7}
+.topbar-event{font-size:.82rem;color:var(--text-secondary)}
+.topbar-right{display:flex;align-items:center;gap:.6rem}
+.topbar-badge{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:.3rem .7rem;border-radius:6px;background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.15);color:var(--accent);letter-spacing:.04em}
+
+/* Main layout */
+.main-layout{display:grid;grid-template-columns:1fr 280px;gap:1rem;align-items:start;animation:fadeUp .6s ease-out .1s both}
+
+@media(max-width:1100px){.main-layout{grid-template-columns:1fr}}
+
+/* Controls bar */
+.controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:1rem;padding:.8rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;animation:fadeUp .5s ease-out .15s both}
+.ctrl-group{display:flex;align-items:center;gap:.4rem}
+.ctrl-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;margin-right:.2rem;white-space:nowrap}
+.ctrl-select{background:var(--bg-cell);border:1px solid var(--border);color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:.35rem .6rem;border-radius:6px;cursor:pointer;transition:border-color .2s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.ctrl-select:hover{border-color:var(--border-light)}
+.ctrl-select:focus{outline:none;border-color:var(--accent)}
+.ctrl-divider{width:1px;height:24px;background:var(--border);margin:0 .3rem}
+.ctrl-radio{display:flex;gap:2px;background:var(--bg-deep);border-radius:6px;padding:2px;border:1px solid var(--border)}
+.ctrl-radio label{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:.3rem .6rem;border-radius:4px;cursor:pointer;color:var(--text-muted);transition:all .2s;white-space:nowrap;user-select:none}
+.ctrl-radio input{display:none}
+.ctrl-radio input:checked+label{background:var(--bg-hover);color:var(--text-primary)}
+
+/* Blocked slots indicator */
+.blocked-list{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+.blocked-chip{font-family:'JetBrains Mono',monospace;font-size:.55rem;padding:2px 6px;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;gap:3px;cursor:pointer;transition:all .2s}
+.blocked-chip:hover{background:rgba(239,68,68,0.2)}
+.blocked-chip .x{font-size:.7rem;line-height:1}
+
+/*── Heatmap ──*/
+.heatmap-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;overflow-x:auto}
+.heatmap-wrapper{min-width:640px;position:relative}
+.heatmap-grid{display:grid;gap:0;position:relative}
+.day-header{text-align:center;padding:.5rem .2rem;font-weight:600;font-size:.78rem;letter-spacing:.03em;color:var(--text-secondary);border-bottom:1px solid var(--border)}
+.time-header{border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding-bottom:.4rem;font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase}
+.time-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--text-muted);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;height:20px;user-select:none}
+.time-label.hour{color:var(--text-secondary);font-weight:500}
+.cell{height:20px;border:1px solid rgba(30,41,59,0.4);cursor:pointer;transition:all .12s;position:relative}
+.cell:hover{transform:scaleY(1.4);z-index:5;border-color:rgba(255,255,255,0.15);box-shadow:0 0 10px rgba(255,255,255,0.04)}
+.cell.h0{background:var(--heat-0)}.cell.h1{background:var(--heat-1)}.cell.h2{background:var(--heat-2)}
+.cell.h3{background:var(--heat-3)}.cell.h4{background:var(--heat-4)}.cell.h5{background:var(--heat-5)}
+.cell.h6{background:var(--heat-6)}.cell.h7{background:var(--heat-7)}.cell.h8{background:var(--heat-8)}
+/* For >8 people, interpolate */
+.cell.h9{background:#fcd34d}.cell.h10{background:#fde68a}
+
+.cell.person-on{box-shadow:inset 0 0 8px rgba(255,255,255,0.15)}
+.cell.person-off{background:var(--heat-0)!important;opacity:.35}
+.cell.blocked::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 3px,rgba(239,68,68,0.15) 3px,rgba(239,68,68,0.15) 4px);pointer-events:none;z-index:1}
+
+/* Solution outlines */
+.sol-outline{position:absolute;border:2px solid var(--accent);border-radius:4px;pointer-events:none;z-index:10;animation:solPulse 2.5s ease-in-out infinite;box-shadow:0 0 18px rgba(34,211,238,0.15),inset 0 0 18px rgba(34,211,238,0.04)}
+.sol-outline .sol-tag{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:600;color:var(--accent);white-space:nowrap;letter-spacing:.04em;text-shadow:0 0 10px rgba(34,211,238,0.4)}
+@keyframes solPulse{0%,100%{border-color:rgba(34,211,238,0.75);box-shadow:0 0 18px rgba(34,211,238,0.15),inset 0 0 18px rgba(34,211,238,0.04)}50%{border-color:rgba(34,211,238,0.35);box-shadow:0 0 32px rgba(34,211,238,0.3),inset 0 0 22px rgba(34,211,238,0.08)}}
+
+/* Heat legend */
+.heat-legend{display:flex;align-items:center;justify-content:center;gap:1px;margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border)}
+.heat-legend span{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--text-muted);margin:0 5px}
+.hswatch{width:20px;height:10px;border-radius:2px}
+
+/*── Sidebar ──*/
+.sidebar{display:flex;flex-direction:column;gap:.8rem}
+@media(max-width:1100px){.sidebar{flex-direction:row;flex-wrap:wrap}.sidebar>*{flex:1;min-width:260px}}
+
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1rem}
+.panel-title{font-family:'JetBrains Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:.7rem}
+
+/* People list */
+.person-row{display:flex;align-items:center;gap:7px;padding:5px 7px;margin:1px 0;border-radius:7px;cursor:pointer;transition:all .2s;user-select:none;position:relative}
+.person-row:hover{background:var(--bg-hover)}
+.person-row.active{background:var(--bg-hover)}
+.person-row.required::after{content:'REQ';position:absolute;right:6px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:.45rem;color:var(--accent);letter-spacing:.06em;background:var(--accent-dim);padding:1px 5px;border-radius:3px}
+.pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:transform .2s,box-shadow .2s}
+.person-row.active .pdot{transform:scale(1.5);box-shadow:0 0 8px currentColor}
+.pname{font-size:.78rem;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.phours{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-muted)}
+.pbar-track{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,0.03);border-radius:1px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:1px;transform-origin:left;animation:barIn .8s ease-out forwards}
+@keyframes barIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.clear-btn{display:none;margin-top:.4rem;padding:.35rem;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:6px;color:#ef4444;font-size:.65rem;font-weight:500;cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif}
+.clear-btn:hover{background:rgba(239,68,68,0.12)}
+.clear-btn.show{display:block}
+
+/* Solution panel */
+.sol-card{background:rgba(34,211,238,0.03);border:1px solid rgba(34,211,238,0.12);border-radius:10px;padding:.75rem;margin-bottom:.5rem;position:relative;overflow:hidden}
+.sol-card:last-of-type{margin-bottom:0}
+.sol-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);border-radius:0 2px 2px 0}
+.sol-title{font-weight:600;font-size:.78rem;color:var(--accent);margin-bottom:.1rem}
+.sol-time{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--text-secondary);margin-bottom:.35rem}
+.sol-chips{display:flex;flex-wrap:wrap;gap:3px}
+.sol-chip{font-size:.56rem;padding:2px 6px;border-radius:4px;font-weight:500}
+.sol-note{font-size:.6rem;color:var(--text-muted);margin-top:.3rem;font-style:italic;line-height:1.4}
+.sol-coverage{text-align:center;margin-top:.5rem;padding:.5rem;background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.1);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--accent);font-weight:500}
+.sol-coverage strong{color:#fff}
+.sol-breakdown{margin-top:.4rem;font-size:.58rem;color:var(--text-muted);line-height:1.5}
+.sol-breakdown span{font-weight:500}
+
+/* Suggestion */
+.suggestion{margin-top:.5rem;padding:.6rem;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);border-radius:8px;font-size:.62rem;color:var(--text-secondary);line-height:1.5}
+.suggestion strong{color:#fbbf24;font-weight:600}
+
+/*── Tooltip ──*/
+.tooltip{position:fixed;background:#1e293b;border:1px solid var(--border-light);border-radius:10px;padding:.6rem .8rem;pointer-events:none;z-index:200;opacity:0;transition:opacity .12s;max-width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.tooltip.vis{opacity:1}
+.tt-time{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--accent);margin-bottom:.3rem;font-weight:500}
+.tt-count{font-size:.68rem;color:var(--text-secondary);margin-bottom:.35rem;font-weight:500}
+.tt-chips{display:flex;flex-wrap:wrap;gap:2px}
+.tt-chip{font-size:.58rem;padding:1px 6px;border-radius:3px;font-weight:500;color:#fff}
+.tt-absent{margin-top:.3rem;font-size:.55rem;color:var(--text-muted);font-style:italic}
+.tt-block-hint{margin-top:.3rem;font-family:'JetBrains Mono',monospace;font-size:.5rem;color:#ef4444;letter-spacing:.03em}
+
+/*── Animations ──*/
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LANDING ═══ -->
+<div class="landing" id="landing">
+<div class="landing-inner">
+  <div class="logo">When2Solve</div>
+  <h1><span class="grad">When2Meet finds times.<br>We find answers.</span></h1>
+  <p class="tagline">A client-side optimizer that turns your When2Meet into actionable meeting recommendations — with constraints, multi-meeting coverage, and zero servers.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01</div>
+      <div class="step-title">Grab the bookmarklet</div>
+      <div class="step-desc">Drag the button below into your browser's bookmark bar. It's a tiny script that reads When2Meet data.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02</div>
+      <div class="step-title">Visit your When2Meet</div>
+      <div class="step-desc">Open any When2Meet event page where participants have filled in their availability.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03</div>
+      <div class="step-title">Click &amp; solve</div>
+      <div class="step-desc">Click the bookmarklet. It extracts the data and launches When2Solve with instant recommendations.</div>
+    </div>
+  </div>
+
+  <div class="bm-container">
+    <div class="bm-label">Drag this to your bookmark bar</div>
+    <a class="bm-button" id="bookmarklet" href="#">⚡ When2Solve</a>
+    <div class="bm-hint">Works on any When2Meet event · No data leaves your browser</div>
+  </div>
+
+  <button class="demo-btn" onclick="loadDemo()">Try with demo data</button>
+
+  <div class="landing-footer">
+    Built with no backend · Runs entirely in your browser · <a href="https://github.com">View on GitHub</a>
+  </div>
+</div>
+</div>
+
+<!-- ═══ SOLVER ═══ -->
+<div class="solver" id="solver">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand" onclick="goHome()">WHEN2SOLVE</div>
+      <div class="topbar-event" id="eventInfo"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-badge" id="participantBadge"></div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Duration</span>
+      <select class="ctrl-select" id="ctrlDuration" onchange="onConstraintChange()">
+        <option value="2">30 min</option>
+        <option value="3">45 min</option>
+        <option value="4" selected>1 hr</option>
+        <option value="5">1.25 hr</option>
+        <option value="6">1.5 hr</option>
+      </select>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Meetings</span>
+      <select class="ctrl-select" id="ctrlMeetings" onchange="onConstraintChange()">
+        <option value="0">Auto</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+      </select>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Goal</span>
+      <div class="ctrl-radio">
+        <input type="radio" name="goal" id="goalMax" value="max" checked onchange="onConstraintChange()">
+        <label for="goalMax">Max attendance</label>
+        <input type="radio" name="goal" id="goalCover" value="cover" onchange="onConstraintChange()">
+        <label for="goalCover">Cover everyone</label>
+      </div>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Blocked</span>
+      <div class="blocked-list" id="blockedList">
+        <span style="font-size:.6rem;color:var(--text-muted)">Click cells to block</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="heatmap-panel">
+      <div class="heatmap-wrapper" id="heatmapWrapper">
+        <div class="heatmap-grid" id="grid"></div>
+      </div>
+      <div class="heat-legend" id="legend"></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="panel">
+        <div class="panel-title">Team · click to filter · right-click to require</div>
+        <div id="peopleList"></div>
+        <div class="clear-btn" id="clearBtn" onclick="clearFilter()">✕ Clear filter</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Recommended</div>
+        <div id="solutions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-time" id="ttTime"></div>
+  <div class="tt-count" id="ttCount"></div>
+  <div class="tt-chips" id="ttChips"></div>
+  <div class="tt-absent" id="ttAbsent"></div>
+  <div class="tt-block-hint" id="ttBlockHint"></div>
+</div>
+
+<script>
+/*═══════════════════════════════════════════════════════════════
+  STATE
+═══════════════════════════════════════════════════════════════*/
+let STATE = {
+  names: [], ids: [], available: [], times: [],
+  // derived
+  days: [], dayNames: [], dayMap: {}, timeLabels: [], slots: [],
+  // constraints
+  required: new Set(),
+  blocked: new Set(),
+  activePerson: null,
+  // config
+  numPeople: 0,
+};
+
+const PCOLORS = ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171',
+                 '#c084fc','#4ade80','#fca5a5','#67e8f9','#fde047','#d946ef','#a3e635','#fb7185'];
+const DAY_LABELS = {0:'Sun',1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
+const BASE_URL = location.href.split('#')[0];
+
+/*═══════════════════════════════════════════════════════════════
+  BOOKMARKLET
+═══════════════════════════════════════════════════════════════*/
+function setupBookmarklet() {
+  const code = `javascript:void(function(){if(typeof PeopleNames==='undefined'){alert('Open a When2Meet event page first!');return;}try{var d=JSON.stringify({n:PeopleNames,i:PeopleIDs,a:AvailableAtSlot,t:TimeOfSlot});var e=btoa(unescape(encodeURIComponent(d)));window.location='${BASE_URL}#'+e;}catch(x){alert('Error: '+x.message);}})()`;
+  const el = document.getElementById('bookmarklet');
+  el.href = code;
+  el.addEventListener('click', function(e) {
+    e.preventDefault();
+    alert('Drag this button to your bookmark bar!\\nThen visit a When2Meet page and click it.');
+  });
+}
+
+/*═══════════════════════════════════════════════════════════════
+  DATA DECODE
+═══════════════════════════════════════════════════════════════*/
+function decodeHash() {
+  const hash = location.hash.slice(1);
+  if (!hash) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(hash)));
+    const d = JSON.parse(json);
+    if (!d.n || !d.i || !d.a || !d.t) return null;
+    return d;
+  } catch(e) {
+    console.error('Decode error:', e);
+    return null;
+  }
+}
+
+function processData(raw) {
+  STATE.names = raw.n;
+  STATE.ids = raw.i;
+  STATE.available = raw.a;
+  STATE.times = raw.t;
+  STATE.numPeople = raw.n.length;
+  STATE.required = new Set();
+  STATE.blocked = new Set();
+  STATE.activePerson = null;
+
+  // Build id→name map
+  const idMap = {};
+  for (let i = 0; i < STATE.numPeople; i++) idMap[STATE.ids[i]] = STATE.names[i];
+
+  // Parse timestamps (When2Meet uses UTC time as local time, fake 1978 dates)
+  // Group by day-of-week
+  const daySlots = {};
+  const allSlots = [];
+
+  for (let i = 0; i < STATE.times.length; i++) {
+    const ts = STATE.times[i];
+    const dt = new Date(ts * 1000);
+    const utcDay = dt.getUTCDay();
+    const utcH = dt.getUTCHours();
+    const utcM = dt.getUTCMinutes();
+    const dayKey = dt.toISOString().slice(0,10); // unique date key
+
+    if (!daySlots[dayKey]) daySlots[dayKey] = { day: utcDay, date: dayKey, slots: [] };
+
+    const availNames = [];
+    const availIds = STATE.available[i] || [];
+    for (const pid of availIds) {
+      if (idMap[pid]) availNames.push(idMap[pid]);
+    }
+
+    const slotObj = {
+      idx: i, h: utcH, m: utcM, day: utcDay, dayKey,
+      available: new Set(availNames),
+      label: formatTime(utcH, utcM),
+      isHour: utcM === 0,
+    };
+    daySlots[dayKey].slots.push(slotObj);
+    allSlots.push(slotObj);
+  }
+
+  // Sort days
+  const sortedDayKeys = Object.keys(daySlots).sort();
+  STATE.days = sortedDayKeys;
+  STATE.dayNames = sortedDayKeys.map(k => DAY_LABELS[daySlots[k].day] || k);
+  STATE.dayMap = daySlots;
+  STATE.slots = allSlots;
+
+  // Unique time labels (from first day)
+  STATE.timeLabels = daySlots[sortedDayKeys[0]].slots.map(s => ({
+    label: s.label, h: s.h, m: s.m, isHour: s.isHour
+  }));
+}
+
+function formatTime(h, m) {
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function shortTime(h, m) {
+  const ampm = h >= 12 ? 'p' : 'a';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function pcolor(name) {
+  const idx = STATE.names.indexOf(name);
+  return PCOLORS[idx % PCOLORS.length];
+}
+
+function shortName(name) {
+  if (name.length <= 10) return name;
+  const parts = name.split(' ');
+  return parts[0];
+}
+
+/*═══════════════════════════════════════════════════════════════
+  SOLVER
+═══════════════════════════════════════════════════════════════*/
+function solve() {
+  const duration = parseInt(document.getElementById('ctrlDuration').value);
+  const meetingsPref = parseInt(document.getElementById('ctrlMeetings').value);
+  const goal = document.querySelector('input[name="goal"]:checked').value;
+  const required = STATE.required;
+  const blocked = STATE.blocked;
+  const allNames = new Set(STATE.names);
+
+  // Build windows per day
+  const windows = [];
+  for (const dayKey of STATE.days) {
+    const daySlots = STATE.dayMap[dayKey].slots;
+    for (let i = 0; i <= daySlots.length - duration; i++) {
+      const windowSlots = daySlots.slice(i, i + duration);
+      // Check contiguous (15-min gaps)
+      let contiguous = true;
+      for (let j = 1; j < windowSlots.length; j++) {
+        const diff = (windowSlots[j].h * 60 + windowSlots[j].m) - (windowSlots[j-1].h * 60 + windowSlots[j-1].m);
+        if (diff !== 15) { contiguous = false; break; }
+      }
+      if (!contiguous) continue;
+
+      // Check no blocked slots
+      const slotKeys = windowSlots.map(s => `${s.dayKey}:${s.h}:${s.m}`);
+      if (slotKeys.some(k => blocked.has(k))) continue;
+
+      // Intersect availability across window
+      let common = new Set(windowSlots[0].available);
+      for (let j = 1; j < windowSlots.length; j++) {
+        common = new Set([...common].filter(n => windowSlots[j].available.has(n)));
+      }
+
+      // Check required attendees
+      let reqMet = true;
+      for (const r of required) {
+        if (!common.has(r)) { reqMet = false; break; }
+      }
+      if (!reqMet) continue;
+
+      const endSlot = windowSlots[windowSlots.length - 1];
+      const endM = endSlot.m + 15;
+      const endH = endSlot.h + Math.floor(endM / 60);
+
+      windows.push({
+        dayKey, day: windowSlots[0].day,
+        dayName: DAY_LABELS[windowSlots[0].day],
+        startH: windowSlots[0].h, startM: windowSlots[0].m,
+        endH: endH, endM: endM % 60,
+        count: common.size, attendees: common,
+        missing: new Set([...allNames].filter(n => !common.has(n))),
+        slotKeys,
+        startIdx: i,
+      });
+    }
+  }
+
+  windows.sort((a, b) => b.count - a.count || a.startH - b.startH);
+
+  const results = { single: [], pairs: [], coverage: 0, suggestion: null };
+
+  // Single best
+  results.single = windows.slice(0, 5);
+
+  // Check if single meeting covers everyone
+  const bestSingle = windows[0];
+  const singleCovers = bestSingle && bestSingle.count === STATE.numPeople;
+
+  // Determine meeting count
+  let numMeetings = meetingsPref;
+  if (numMeetings === 0) {
+    numMeetings = singleCovers ? 1 : 2;
+  }
+
+  if (numMeetings === 2 && windows.length >= 2) {
+    // Find best pairs
+    const topN = Math.min(windows.length, 60); // limit search
+    let bestPairs = [];
+    for (let i = 0; i < topN; i++) {
+      for (let j = i + 1; j < topN; j++) {
+        const a = windows[i], b = windows[j];
+        const union = new Set([...a.attendees, ...b.attendees]);
+        const uncovered = [...allNames].filter(n => !union.has(n));
+        const score = union.size * 1000 + Math.min(a.count, b.count);
+        const diffDay = a.dayKey !== b.dayKey;
+        bestPairs.push({
+          a, b, union, uncovered, score, diffDay,
+          coverage: union.size,
+        });
+      }
+    }
+    // Sort: full coverage first, then prefer different days, then balanced attendance
+    bestPairs.sort((x, y) => {
+      if (y.coverage !== x.coverage) return y.coverage - x.coverage;
+      if (x.diffDay !== y.diffDay) return x.diffDay ? -1 : 1;
+      return y.score - x.score;
+    });
+    results.pairs = bestPairs.slice(0, 3);
+  }
+
+  // Coverage
+  if (numMeetings === 2 && results.pairs.length > 0) {
+    results.coverage = results.pairs[0].coverage;
+  } else if (results.single.length > 0) {
+    results.coverage = results.single[0].count;
+  }
+
+  // Generate suggestion if not full coverage
+  if (results.coverage < STATE.numPeople) {
+    const bestSol = numMeetings === 2 && results.pairs.length > 0
+      ? results.pairs[0] : null;
+    if (bestSol) {
+      const missing = bestSol.uncovered;
+      if (missing.length > 0 && missing.length <= 2) {
+        // Check what slot extension would help
+        results.suggestion = `${missing.join(' & ')} can't make any combination. Check if they can extend availability on ${bestSol.a.dayName} or ${bestSol.b.dayName}.`;
+      }
+    }
+  }
+
+  results.numMeetings = numMeetings;
+  results.windows = windows;
+  return results;
+}
+
+/*═══════════════════════════════════════════════════════════════
+  RENDER
+═══════════════════════════════════════════════════════════════*/
+let cellEls = [];
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  cellEls = [];
+
+  const nDays = STATE.days.length;
+  const nTimes = STATE.timeLabels.length;
+  grid.style.gridTemplateColumns = `52px repeat(${nDays}, 1fr)`;
+
+  // Corner + day headers
+  const corner = document.createElement('div');
+  corner.className = 'time-header';
+  grid.appendChild(corner);
+
+  STATE.days.forEach((dk, di) => {
+    const dh = document.createElement('div');
+    dh.className = 'day-header';
+    dh.textContent = STATE.dayNames[di];
+    grid.appendChild(dh);
+  });
+
+  // Rows
+  STATE.timeLabels.forEach((tl, ti) => {
+    const label = document.createElement('div');
+    label.className = 'time-label' + (tl.isHour ? ' hour' : '');
+    label.textContent = tl.isHour ? shortTime(tl.h, tl.m) : '';
+    grid.appendChild(label);
+
+    STATE.days.forEach((dk, di) => {
+      const daySlots = STATE.dayMap[dk].slots;
+      const slot = daySlots[ti];
+      const count = slot ? slot.available.size : 0;
+      const heatClass = `h${Math.min(count, 10)}`;
+
+      const cell = document.createElement('div');
+      cell.className = `cell ${heatClass}`;
+      cell.dataset.di = di;
+      cell.dataset.ti = ti;
+      cell.dataset.dayKey = dk;
+      if (slot) {
+        cell.dataset.h = slot.h;
+        cell.dataset.m = slot.m;
+        cell.dataset.people = JSON.stringify([...slot.available]);
+        cell.dataset.time = slot.label;
+        cell.dataset.day = STATE.dayNames[di];
+        cell.dataset.count = count;
+        cell.dataset.slotKey = `${dk}:${slot.h}:${slot.m}`;
+      }
+
+      // Blocked?
+      if (slot && STATE.blocked.has(`${dk}:${slot.h}:${slot.m}`)) {
+        cell.classList.add('blocked');
+      }
+
+      cell.addEventListener('mouseenter', ttShow);
+      cell.addEventListener('mouseleave', ttHide);
+      cell.addEventListener('click', onCellClick);
+
+      grid.appendChild(cell);
+      cellEls.push(cell);
+    });
+  });
+}
+
+function renderLegend() {
+  const el = document.getElementById('legend');
+  const max = Math.min(STATE.numPeople, 10);
+  let html = '<span>0</span>';
+  for (let i = 0; i <= max; i++) {
+    const colors = ['#111827','#1e1a2e','#2d1f3d','#4c1d6e','#7c2d8e','#b83a6a','#e04842','#f59e0b','#fbbf24','#fcd34d','#fde68a'];
+    html += `<div class="hswatch" style="background:${colors[i] || colors[colors.length-1]}"></div>`;
+  }
+  html += `<span>${STATE.numPeople}/${STATE.numPeople}</span>`;
+  el.innerHTML = html;
+}
+
+function renderPeople() {
+  const list = document.getElementById('peopleList');
+  list.innerHTML = '';
+  const maxH = Math.max(...STATE.names.map(n => getTotalHours(n)));
+
+  // Sort by total hours desc
+  const sorted = [...STATE.names].sort((a,b) => getTotalHours(b) - getTotalHours(a));
+
+  sorted.forEach((name, i) => {
+    const h = getTotalHours(name);
+    const row = document.createElement('div');
+    row.className = 'person-row' + (STATE.required.has(name) ? ' required' : '');
+    row.dataset.person = name;
+    row.style.position = 'relative';
+
+    row.addEventListener('click', () => toggleFilter(name));
+    row.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      toggleRequired(name);
+    });
+
+    row.innerHTML = `
+      <div class="pdot" style="background:${pcolor(name)};color:${pcolor(name)}"></div>
+      <div class="pname">${shortName(name)}</div>
+      <div class="phours">${h.toFixed(0)}h</div>
+      <div class="pbar-track"><div class="pbar-fill" style="width:${(h/maxH)*100}%;background:${pcolor(name)};animation-delay:${.2+i*.06}s;opacity:0" onanimationstart="this.style.opacity=1"></div></div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function getTotalHours(name) {
+  let count = 0;
+  for (const slot of STATE.slots) {
+    if (slot.available.has(name)) count++;
+  }
+  return count * 0.25;
+}
+
+function renderSolutions() {
+  const results = solve();
+  const container = document.getElementById('solutions');
+  container.innerHTML = '';
+
+  // Clear old outlines
+  document.querySelectorAll('.sol-outline').forEach(e => e.remove());
+
+  const usePairs = results.numMeetings === 2 && results.pairs.length > 0;
+
+  if (usePairs) {
+    const pair = results.pairs[0];
+    renderSolCard(container, pair.a, 'Meeting 1', 1);
+    renderSolCard(container, pair.b, 'Meeting 2', 2);
+
+    // Breakdown
+    const onlyA = [...pair.a.attendees].filter(n => !pair.b.attendees.has(n));
+    const onlyB = [...pair.b.attendees].filter(n => !pair.a.attendees.has(n));
+    const both = [...pair.a.attendees].filter(n => pair.b.attendees.has(n));
+
+    let breakdownHtml = '<div class="sol-breakdown">';
+    if (both.length) breakdownHtml += `<span>Both:</span> ${both.map(n=>shortName(n)).join(', ')}<br>`;
+    if (onlyA.length) breakdownHtml += `<span>Only Meeting 1:</span> ${onlyA.map(n=>shortName(n)).join(', ')}<br>`;
+    if (onlyB.length) breakdownHtml += `<span>Only Meeting 2:</span> ${onlyB.map(n=>shortName(n)).join(', ')}`;
+    breakdownHtml += '</div>';
+    container.insertAdjacentHTML('beforeend', breakdownHtml);
+
+    const covHtml = `<div class="sol-coverage"><strong>${pair.coverage}/${STATE.numPeople}</strong> members covered</div>`;
+    container.insertAdjacentHTML('beforeend', covHtml);
+
+    if (pair.uncovered.length > 0) {
+      container.insertAdjacentHTML('beforeend',
+        `<div class="sol-coverage" style="color:#ef4444;border-color:rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)">
+          Missing: ${pair.uncovered.map(n=>shortName(n)).join(', ')}
+        </div>`);
+    }
+
+    // Draw outlines
+    drawOutline(pair.a, 'MTG 1');
+    drawOutline(pair.b, 'MTG 2');
+
+  } else if (results.single.length > 0) {
+    const best = results.single[0];
+    renderSolCard(container, best, 'Best Meeting', 1);
+    const covHtml = `<div class="sol-coverage"><strong>${best.count}/${STATE.numPeople}</strong> attend</div>`;
+    container.insertAdjacentHTML('beforeend', covHtml);
+    if (best.missing.size > 0) {
+      container.insertAdjacentHTML('beforeend',
+        `<div class="sol-coverage" style="color:#ef4444;border-color:rgba(239,68,68,0.15);background:rgba(239,68,68,0.04)">
+          Missing: ${[...best.missing].map(n=>shortName(n)).join(', ')}
+        </div>`);
+    }
+    drawOutline(best, 'BEST');
+  } else {
+    container.innerHTML = '<div style="font-size:.75rem;color:var(--text-muted);padding:1rem;text-align:center">No valid windows found.<br>Try adjusting constraints.</div>';
+  }
+
+  if (results.suggestion) {
+    container.insertAdjacentHTML('beforeend',
+      `<div class="suggestion"><strong>💡 Tip:</strong> ${results.suggestion}</div>`);
+  }
+}
+
+function renderSolCard(container, win, title, num) {
+  const card = document.createElement('div');
+  card.className = 'sol-card';
+  const timeRange = `${formatTime(win.startH, win.startM)} – ${formatTime(win.endH, win.endM)}`;
+  let chipsHtml = '';
+  for (const name of win.attendees) {
+    chipsHtml += `<span class="sol-chip" style="background:${pcolor(name)}22;color:${pcolor(name)}">${shortName(name)}</span>`;
+  }
+  card.innerHTML = `
+    <div class="sol-title">${title}</div>
+    <div class="sol-time">${win.dayName} · ${timeRange}</div>
+    <div class="sol-chips">${chipsHtml}</div>
+    <div class="sol-note">${win.count}/${STATE.numPeople} members</div>
+  `;
+  container.appendChild(card);
+}
+
+function drawOutline(win, label) {
+  const grid = document.getElementById('grid');
+  const di = STATE.days.indexOf(win.dayKey);
+  const ti = STATE.timeLabels.findIndex(t => t.h === win.startH && t.m === win.startM);
+  const dur = parseInt(document.getElementById('ctrlDuration').value);
+  const tiEnd = ti + dur - 1;
+
+  const firstCell = grid.querySelector(`.cell[data-di="${di}"][data-ti="${ti}"]`);
+  const lastCell = grid.querySelector(`.cell[data-di="${di}"][data-ti="${tiEnd}"]`);
+  if (!firstCell || !lastCell) return;
+
+  const gridRect = grid.getBoundingClientRect();
+  const fRect = firstCell.getBoundingClientRect();
+  const lRect = lastCell.getBoundingClientRect();
+
+  const outline = document.createElement('div');
+  outline.className = 'sol-outline';
+  outline.style.left = (fRect.left - gridRect.left - 2) + 'px';
+  outline.style.top = (fRect.top - gridRect.top - 2) + 'px';
+  outline.style.width = (fRect.width + 4) + 'px';
+  outline.style.height = (lRect.bottom - fRect.top + 4) + 'px';
+
+  const tag = document.createElement('div');
+  tag.className = 'sol-tag';
+  tag.textContent = label;
+  outline.appendChild(tag);
+
+  grid.style.position = 'relative';
+  grid.appendChild(outline);
+}
+
+/*═══════════════════════════════════════════════════════════════
+  INTERACTIONS
+═══════════════════════════════════════════════════════════════*/
+function ttShow(e) {
+  const cell = e.currentTarget;
+  if (!cell.dataset.people) return;
+  const tt = document.getElementById('tooltip');
+  const people = JSON.parse(cell.dataset.people);
+  const count = parseInt(cell.dataset.count);
+  const allNames = STATE.names;
+
+  document.getElementById('ttTime').textContent = `${cell.dataset.day} · ${cell.dataset.time}`;
+  document.getElementById('ttCount').textContent = `${count}/${STATE.numPeople} available`;
+
+  const chipsEl = document.getElementById('ttChips');
+  chipsEl.innerHTML = '';
+  people.forEach(n => {
+    const chip = document.createElement('span');
+    chip.className = 'tt-chip';
+    chip.textContent = shortName(n);
+    chip.style.background = pcolor(n) + '33';
+    chip.style.color = pcolor(n);
+    chipsEl.appendChild(chip);
+  });
+
+  const absent = allNames.filter(n => !people.includes(n));
+  document.getElementById('ttAbsent').textContent = absent.length ? `Missing: ${absent.map(shortName).join(', ')}` : '';
+
+  const isBlocked = cell.classList.contains('blocked');
+  document.getElementById('ttBlockHint').textContent = isBlocked ? '● BLOCKED — click to unblock' : 'Shift+click to block this slot';
+
+  tt.classList.add('vis');
+  const r = cell.getBoundingClientRect();
+  let left = r.right + 10, top = r.top - 10;
+  if (left + 240 > window.innerWidth) left = r.left - 250;
+  if (top + 120 > window.innerHeight) top = window.innerHeight - 130;
+  if (top < 8) top = 8;
+  tt.style.left = left + 'px';
+  tt.style.top = top + 'px';
+}
+
+function ttHide() {
+  document.getElementById('tooltip').classList.remove('vis');
+}
+
+function onCellClick(e) {
+  const cell = e.currentTarget;
+  if (!cell.dataset.slotKey) return;
+  // Shift+click or regular click to toggle block
+  const key = cell.dataset.slotKey;
+  if (e.shiftKey || (!STATE.activePerson && e.button === 0)) {
+    // Only block on shift+click to avoid confusion with person filter
+    if (e.shiftKey) {
+      if (STATE.blocked.has(key)) {
+        STATE.blocked.delete(key);
+        cell.classList.remove('blocked');
+      } else {
+        STATE.blocked.add(key);
+        cell.classList.add('blocked');
+      }
+      renderBlockedList();
+      renderSolutions();
+    }
+  }
+}
+
+function renderBlockedList() {
+  const el = document.getElementById('blockedList');
+  if (STATE.blocked.size === 0) {
+    el.innerHTML = '<span style="font-size:.6rem;color:var(--text-muted)">Shift+click cells</span>';
+    return;
+  }
+  el.innerHTML = '';
+  for (const key of STATE.blocked) {
+    const [dk, h, m] = key.split(':');
+    const di = STATE.days.indexOf(dk);
+    const dayName = STATE.dayNames[di] || dk;
+    const chip = document.createElement('span');
+    chip.className = 'blocked-chip';
+    chip.innerHTML = `${dayName} ${shortTime(+h,+m)} <span class="x">×</span>`;
+    chip.onclick = () => {
+      STATE.blocked.delete(key);
+      const cell = document.querySelector(`.cell[data-slot-key="${key}"]`);
+      if (cell) cell.classList.remove('blocked');
+      renderBlockedList();
+      renderSolutions();
+    };
+    el.appendChild(chip);
+  }
+}
+
+function toggleFilter(name) {
+  if (STATE.activePerson === name) {
+    clearFilter();
+    return;
+  }
+  STATE.activePerson = name;
+  document.querySelectorAll('.person-row').forEach(r => r.classList.toggle('active', r.dataset.person === name));
+  document.getElementById('clearBtn').classList.add('show');
+
+  cellEls.forEach(cell => {
+    if (!cell.dataset.people) return;
+    const people = JSON.parse(cell.dataset.people);
+    if (people.includes(name)) {
+      cell.classList.add('person-on');
+      cell.classList.remove('person-off');
+      cell.style.background = pcolor(name);
+    } else {
+      cell.classList.remove('person-on');
+      cell.classList.add('person-off');
+    }
+  });
+}
+
+function clearFilter() {
+  STATE.activePerson = null;
+  document.querySelectorAll('.person-row').forEach(r => r.classList.remove('active'));
+  document.getElementById('clearBtn').classList.remove('show');
+  cellEls.forEach(cell => {
+    cell.classList.remove('person-on', 'person-off');
+    cell.style.background = '';
+  });
+}
+
+function toggleRequired(name) {
+  if (STATE.required.has(name)) {
+    STATE.required.delete(name);
+  } else {
+    STATE.required.add(name);
+  }
+  document.querySelectorAll('.person-row').forEach(r => {
+    r.classList.toggle('required', STATE.required.has(r.dataset.person));
+  });
+  renderSolutions();
+}
+
+function onConstraintChange() {
+  renderSolutions();
+}
+
+function goHome() {
+  location.hash = '';
+  document.getElementById('solver').classList.remove('active');
+  document.getElementById('landing').classList.remove('hidden');
+}
+
+/*═══════════════════════════════════════════════════════════════
+  INIT
+═══════════════════════════════════════════════════════════════*/
+function init() {
+  setupBookmarklet();
+
+  const raw = decodeHash();
+  if (raw) {
+    launchSolver(raw);
+  }
+
+  window.addEventListener('hashchange', () => {
+    const raw = decodeHash();
+    if (raw) launchSolver(raw);
+  });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (document.getElementById('solver').classList.contains('active')) renderSolutions();
+    }, 150);
+  });
+}
+
+function launchSolver(raw) {
+  processData(raw);
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('solver').classList.add('active');
+  document.getElementById('participantBadge').textContent = `${STATE.numPeople} participants`;
+  document.getElementById('eventInfo').textContent = `${STATE.days.length} days · ${STATE.timeLabels.length} time slots`;
+
+  renderGrid();
+  renderLegend();
+  renderPeople();
+  renderSolutions();
+}
+
+/*═══════════════════════════════════════════════════════════════
+  DEMO DATA
+═══════════════════════════════════════════════════════════════*/
+function loadDemo() {
+  // Generate demo data matching our writing meeting When2Meet
+  const names = ["Deep","Doug Adamson","Jakiya","Jinzhou","Mahdad","Mothana Alomari","Rumesha","Umaiya"];
+  const ids = [1,2,3,4,5,6,7,8];
+  const baseTs = 279795600; // Monday 9:00 UTC (When2Meet epoch)
+  const times = [];
+  const available = [];
+
+  // Define availability per person per day
+  const avail = {
+    "Monday": {
+      "9:00-10:15": [1,2,3,4,5,6,7,8],
+      "10:30-10:45": [1,2,3,4,5,7,8],
+      "11:00-11:45": [1,2,3,5,7,8],
+      "12:00-15:45": [1,2,3,5,7]
+    },
+    "Tuesday": {
+      "9:00-9:45": [3,4,5,6,7],
+      "10:00-10:45": [4,5,6,7],
+      "11:00-11:45": [4,5,6],
+      "12:00-12:45": [3,4,5,6],
+      "13:00-13:30": [3,4,5,6,8],
+      "13:45-13:45": [3,4,5,6,7,8],
+      "14:00-14:15": [2,3,4,6,7,8],
+      "14:30-14:45": [2,4,7,8],
+      "15:00-15:45": [2,7,8]
+    },
+    "Wednesday": {
+      "9:00-9:45": [2,4,5,6,7,8],
+      "10:00-10:45": [2,4,5,7,8],
+      "11:00-11:45": [2,5,7,8],
+      "12:00-13:45": [5,6,7,8],
+      "14:00-14:45": [2,5,6,8],
+      "15:00-15:45": [2,4,5,6]
+    },
+    "Thursday": {
+      "9:00-10:00": [3,4,5,6],
+      "10:15-10:45": [1,3,4,5,6],
+      "11:00-13:45": [1,5,6],
+      "14:00-14:15": [1,2,6],
+      "14:30-14:45": [1,2,3],
+      "15:00-15:45": [1,2,3,4]
+    },
+    "Friday": {
+      "9:00-9:00": [2,4,5,6,7,8],
+      "9:15-10:45": [2,4,5,6,7],
+      "11:00-11:45": [2,4,6],
+      "12:00-12:45": [4,6],
+      "13:00-15:45": []
+    }
+  };
+
+  const dayOffsets = [0, 86400, 86400*2, 86400*3, 86400*4]; // Mon-Fri
+  const dayKeys = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+
+  dayKeys.forEach((day, di) => {
+    for (let h = 9; h <= 15; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === 15 && m > 45) break;
+        const ts = baseTs + dayOffsets[di] + (h - 9) * 3600 + m * 60;
+        times.push(ts);
+        // Find who's available
+        const slot = `${h}:${String(m).padStart(2,'0')}`;
+        let ppl = [];
+        for (const [range, ids_list] of Object.entries(avail[day])) {
+          if (isInRange(h, m, range)) { ppl = ids_list; break; }
+        }
+        available.push(ppl);
+      }
+    }
+  });
+
+  const data = { n: names, i: ids, a: available, t: times };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  location.hash = encoded;
+}
+
+function isInRange(h, m, range) {
+  const parts = range.split('-');
+  const parseT = (s) => { const [hh,mm] = s.split(':'); return parseInt(hh)*60+parseInt(mm); };
+  const t = h * 60 + m;
+  if (parts.length === 1) {
+    return t === parseT(parts[0]);
+  }
+  return t >= parseT(parts[0]) && t <= parseT(parts[1]);
+}
+
+init();
+</script>
+</body>
+</html>
