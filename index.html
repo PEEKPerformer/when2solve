@@ -1343,10 +1343,13 @@ function computeInsights() {
     if (!latestPerson || personLatest[n] > personLatest[latestPerson]) latestPerson = n;
   }
   if (earliestPerson && latestPerson && earliestPerson !== latestPerson) {
-    const eTime = formatTime(Math.floor(personEarliest[earliestPerson]), Math.round((personEarliest[earliestPerson] % 1) * 60));
-    const lH = personLatest[latestPerson];
-    const lTime = formatTime(Math.floor(lH), Math.round((lH % 1) * 60));
-    insights.push({ icon: '<i class="fa-solid fa-sun"></i>', text: `<strong>${shortName(earliestPerson)}</strong> is the early bird (from ${eTime}) — <strong>${shortName(latestPerson)}</strong> is the night owl (until ${lTime})` });
+    const spread = personLatest[latestPerson] - personEarliest[earliestPerson];
+    if (spread >= 4) { // Only show if ≥4h spread — genuinely different schedules
+      const eTime = formatTime(Math.floor(personEarliest[earliestPerson]), Math.round((personEarliest[earliestPerson] % 1) * 60));
+      const lH = personLatest[latestPerson];
+      const lTime = formatTime(Math.floor(lH), Math.round((lH % 1) * 60));
+      insights.push({ icon: '<i class="fa-solid fa-sun"></i>', text: `<strong>${shortName(earliestPerson)}</strong> is the early bird (from ${eTime}) — <strong>${shortName(latestPerson)}</strong> is the night owl (until ${lTime})` });
+    }
   }
 
   // --- 2. Morning vs Afternoon team ---
@@ -1360,7 +1363,7 @@ function computeInsights() {
     const mRate = Math.round(mAvail / mPossible * 100);
     const aRate = Math.round(aAvail / aPossible * 100);
     const diff = Math.abs(mRate - aRate);
-    if (diff > 15) {
+    if (diff > 20) {
       const skew = mRate > aRate ? 'mornings' : 'afternoons';
       const pct = Math.max(mRate, aRate);
       insights.push({ icon: skew === 'mornings' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>', text: `The team skews toward <strong>${skew}</strong> — ${pct}% fill rate ${skew === 'mornings' ? 'before noon' : 'after noon'} vs ${Math.min(mRate,aRate)}% ${skew === 'mornings' ? 'after' : 'before'}` });
@@ -1397,14 +1400,22 @@ function computeInsights() {
     const bSz = slots.filter(s => s.available.has(bestPair[1])).length;
     const smaller = Math.min(aSz, bSz);
     const pct = smaller > 0 ? Math.round(maxOv / smaller * 100) : 0;
-    insights.push({ icon: '<i class="fa-solid fa-user-group"></i>', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} share <span class="hl">${pct}%</span> of their availability — easiest pair to co-schedule` });
+    if (pct >= 70) { // Show when overlap is notable
+      const flavor = pct >= 95 ? 'scheduling clones' : pct >= 85 ? 'scheduling soulmates' : 'easiest pair to co-schedule';
+      insights.push({ icon: '<i class="fa-solid fa-user-group"></i>', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} share <span class="hl">${pct}%</span> of their availability — ${flavor}` });
+    }
   }
 
   // --- 4. Ships in the Night (hardest pair) ---
-  if (hardPair && minOv === 0) {
-    insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} have <span class="warn">zero overlap</span> — never available at the same time` });
-  } else if (hardPair && minOv * 0.25 <= 2) {
-    insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
+  // Only show when both people have meaningful availability (≥2h each) but barely overlap
+  if (hardPair) {
+    const hpA = getTotalHours(hardPair[0]), hpB = getTotalHours(hardPair[1]);
+    const bothActive = hpA >= 2 && hpB >= 2;
+    if (bothActive && minOv === 0) {
+      insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} have <span class="warn">zero overlap</span> — never available at the same time` });
+    } else if (bothActive && minOv <= 4) {
+      insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
+    }
   }
 
   // --- 5. Unanimous Windows ---
@@ -1430,9 +1441,7 @@ function computeInsights() {
         unanBlocks.push({ dayKey: dk, dayName: STATE.dayNames[STATE.days.indexOf(dk)], start: daySlots[blockStart], len: blockLen });
       }
     }
-    if (unanBlocks.length === 0) {
-      insights.push({ icon: '<i class="fa-solid fa-bullseye"></i>', text: `<span class="warn">Zero</span> unanimous windows — no contiguous block works for everyone` });
-    } else {
+    if (unanBlocks.length > 0) {
       const descs = unanBlocks.map(b => {
         const dur = (b.len * 0.25);
         const durStr = dur >= 1 ? `${dur}h` : `${dur * 60}min`;
@@ -1485,7 +1494,7 @@ function computeInsights() {
     const [worstDk, worstCount] = dayEntries[0];
     const [bestDk, bestCount] = dayEntries[dayEntries.length - 1];
     const dropPct = Math.round((1 - worstCount / bestCount) * 100);
-    if (dropPct > 25) {
+    if (dropPct > 40) {
       const worstName = STATE.dayNames[STATE.days.indexOf(worstDk)];
       const bestName = STATE.dayNames[STATE.days.indexOf(bestDk)];
       insights.push({ icon: '<i class="fa-solid fa-calendar-xmark"></i>', text: `<strong>Ghost day:</strong> ${worstName} has ${dropPct}% less availability than ${bestName}` });
@@ -1493,7 +1502,7 @@ function computeInsights() {
   }
 
   // --- 8. The Minimalist / The Accommodator ---
-  if (least.h > 0 && least.h < most.h * 0.5 && N >= 4) {
+  if (least.h > 0 && most.h >= least.h * 3 && N >= 4) {
     insights.push({ icon: '<i class="fa-solid fa-scale-balanced"></i>', text: `<strong>${shortName(least.name)}</strong> offered ${fmtHrs(Math.round(least.h / 0.25))} — <strong>${shortName(most.name)}</strong> offered ${fmtHrs(Math.round(most.h / 0.25))} <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
   }
 
@@ -1512,7 +1521,7 @@ function computeInsights() {
   }
   if (lunchSlots > 0) {
     const lunchPct = Math.round(lunchAvail / (lunchSlots * N) * 100);
-    if (lunchPct < 50) {
+    if (lunchPct < 40) {
       insights.push({ icon: '<i class="fa-solid fa-utensils"></i>', text: `Only <span class="warn">${lunchPct}%</span> of the team is free over lunch (12–1 PM) — slim pickings for a midday meeting` });
     }
   }
@@ -1561,7 +1570,7 @@ function computeInsights() {
         }
       }
     }
-    if (bestTwinPct >= 0.9 && twinPair) {
+    if (bestTwinPct >= 0.95 && twinPair) {
       insights.push({ icon: '<i class="fa-solid fa-clone"></i>', text: `<strong>${shortName(twinPair[0])}</strong> and <strong>${shortName(twinPair[1])}</strong> have <span class="hl">${Math.round(bestTwinPct * 100)}%</span> identical availability — scheduling clones` });
     }
   }
@@ -1601,7 +1610,7 @@ function computeInsights() {
       const top = buckets[0];
       const avg = buckets.reduce((s, b) => s + b.count / b.slots, 0) / buckets.length;
       const topAvg = top.count / top.slots;
-      if (topAvg >= N * 0.75 && topAvg > avg * 1.4) {
+      if (topAvg >= N * 0.8 && topAvg > avg * 1.3) {
         const timeStr = formatTime(top.h, 0).replace(':00 ', ' ');
         const nextH = top.h + 1;
         const endStr = formatTime(nextH, 0).replace(':00 ', ' ');
@@ -1694,6 +1703,80 @@ function computeInsights() {
     if (bestCrew && bestCrewSlots >= 16) { // 4+ hours together
       const crewHrs = (bestCrewSlots * 0.25);
       insights.push({ icon: '<i class="fa-solid fa-people-group"></i>', text: `<strong>Core crew:</strong> ${bestCrew.map(shortName).join(', ')} are available together for <span class="hl">${crewHrs}h</span> this week — easiest trio to schedule` });
+    }
+  }
+
+  // --- 19. Doppelganger — detect duplicate/near-duplicate names ---
+  // When2Meet lets people sign up with trailing spaces, slightly different names, etc.
+  {
+    const found = [];
+    for (let i = 0; i < N && found.length === 0; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = names[i].trim().toLowerCase(), b = names[j].trim().toLowerCase();
+        if (a === b) {
+          found.push([names[i], names[j], 'same name (one may have a trailing space)']);
+          break;
+        }
+      }
+    }
+    if (found.length > 0) {
+      const [n1, n2, reason] = found[0];
+      insights.push({ icon: '<i class="fa-solid fa-people-arrows"></i>', text: `<strong>Doppelgänger?</strong> "${shortName(n1)}" and "${shortName(n2)}" — ${reason}. Might be a duplicate entry` });
+    }
+  }
+
+  // --- 20. One-Day Wonder — someone only available on 1 day when event spans 3+ ---
+  if (STATE.days.length >= 3) {
+    for (const n of names) {
+      if (getTotalHours(n) === 0) continue;
+      const activeDays = STATE.days.filter(dk => personDayH[n][dk] > 0);
+      if (activeDays.length === 1) {
+        const dayName = STATE.dayNames[STATE.days.indexOf(activeDays[0])];
+        insights.push({ icon: '<i class="fa-solid fa-calendar-day"></i>', text: `<strong>One-day wonder:</strong> ${shortName(n)} is only free on <span class="hl">${dayName}</span> — all-or-nothing scheduling` });
+        break; // Only show one
+      }
+    }
+  }
+
+  // --- 21. The Bottleneck — removing one person would let everyone else meet ---
+  if (N >= 4 && r && r.single.length > 0) {
+    const bestCount = r.single[0].count;
+    if (bestCount < N && bestCount >= N - 1) {
+      // Best single window covers N-1. Find who's the odd one out
+      const bestWin = r.single[0];
+      const missing = names.filter(n => !bestWin.attendees.has(n));
+      if (missing.length === 1 && getTotalHours(missing[0]) > 0) {
+        insights.push({ icon: '<i class="fa-solid fa-user-xmark"></i>', text: `<strong>The bottleneck:</strong> without ${shortName(missing[0])}, everyone else can meet — they're the scheduling wild card` });
+      }
+    }
+  }
+
+  // --- 22. Lunch Rush — everyone free at 12-1pm on some day ---
+  {
+    const activeNames = names.filter(n => getTotalHours(n) > 0);
+    if (activeNames.length >= 4) {
+      for (const dk of STATE.days) {
+        const lunchSlots = STATE.dayMap[dk].slots.filter(s => s.h >= 12 && s.h < 13);
+        if (lunchSlots.length === 0) continue;
+        const allFree = lunchSlots.some(s => activeNames.every(n => s.available.has(n)));
+        if (allFree) {
+          const dayName = STATE.dayNames[STATE.days.indexOf(dk)];
+          insights.push({ icon: '<i class="fa-solid fa-burger"></i>', text: `<strong>Lunch rush:</strong> everyone's free for lunch on <span class="hl">${dayName}</span> — maybe bring snacks?` });
+          break;
+        }
+      }
+    }
+  }
+
+  // --- 23. The Overachiever — one person with ≥2.5× median availability ---
+  {
+    const activeH = hours.filter(h => h.h > 0).map(h => h.h).sort((a,b) => a - b);
+    if (activeH.length >= 4) {
+      const median = activeH[Math.floor(activeH.length / 2)];
+      const top = hours[hours.length - 1]; // most hours (hours is sorted ascending)
+      if (median > 0 && top.h >= median * 2.5) {
+        insights.push({ icon: '<i class="fa-solid fa-trophy"></i>', text: `<strong>The overachiever:</strong> ${shortName(top.name)} offered <span class="hl">${top.h.toFixed(0)}h</span> — ${(top.h / median).toFixed(1)}× more than the median (${median.toFixed(0)}h)` });
+      }
     }
   }
 
