@@ -1780,6 +1780,223 @@ function computeInsights() {
     }
   }
 
+  // --- 24. Schedule Tetris — two people whose union covers every slot ---
+  if (N >= 3 && activeIndices.length >= 2) {
+    let tetrisPair = null;
+    const totalSlots = slots.length;
+    for (let ii = 0; ii < activeIndices.length && !tetrisPair; ii++) {
+      for (let jj = ii + 1; jj < activeIndices.length; jj++) {
+        const i = activeIndices[ii], j = activeIndices[jj];
+        const ov = overlap[`${i}:${j}`];
+        const sA = Math.round(getTotalHours(names[i]) / 0.25);
+        const sB = Math.round(getTotalHours(names[j]) / 0.25);
+        const union = sA + sB - ov;
+        if (union >= totalSlots) { tetrisPair = [names[i], names[j]]; break; }
+      }
+    }
+    if (tetrisPair) {
+      insights.push({ icon: '<i class="fa-solid fa-puzzle-piece"></i>', text: `<strong>Schedule Tetris:</strong> ${shortName(tetrisPair[0])} + ${shortName(tetrisPair[1])} together cover <span class="hl">every single slot</span> — they fill the board` });
+    }
+  }
+
+  // --- 25. Marathon Runner — someone available 6+ continuous hours on one day ---
+  {
+    let marathon = null;
+    for (const n of names) {
+      if (getTotalHours(n) === 0) continue;
+      for (const dk of STATE.days) {
+        const daySlots = STATE.dayMap[dk].slots;
+        let run = 0, bestRun = 0;
+        for (let i = 0; i < daySlots.length; i++) {
+          if (daySlots[i].available.has(n)) { run++; bestRun = Math.max(bestRun, run); }
+          else run = 0;
+        }
+        if (bestRun >= 40) { // 40 × 15min = 10h
+          const hrs = bestRun * 0.25;
+          const dayName = STATE.dayNames[STATE.days.indexOf(dk)];
+          marathon = { name: n, hrs, day: dayName };
+          break;
+        }
+      }
+      if (marathon) break;
+    }
+    if (marathon) {
+      insights.push({ icon: '<i class="fa-solid fa-person-running"></i>', text: `<strong>Marathon runner:</strong> ${shortName(marathon.name)} has a <span class="hl">${marathon.hrs}h</span> unbroken stretch on ${marathon.day}` });
+    }
+  }
+
+  // --- 26. The Consistent One — same time range every day they're available ---
+  if (STATE.days.length >= 3) {
+    for (const n of names) {
+      if (getTotalHours(n) === 0) continue;
+      const activeDayKeys = STATE.days.filter(dk => personDayH[n][dk] > 0);
+      if (activeDayKeys.length < 3) continue; // need 3+ days to be "consistent"
+      // Collect the set of time-of-day indices per day
+      const dayTimesets = activeDayKeys.map(dk => {
+        const set = new Set();
+        for (const s of STATE.dayMap[dk].slots) {
+          if (s.available.has(n)) set.add(s.h * 60 + s.m);
+        }
+        return set;
+      });
+      // Check if all days have identical time sets
+      const ref = dayTimesets[0];
+      const allSame = dayTimesets.every(ts => ts.size === ref.size && [...ts].every(t => ref.has(t)));
+      if (allSame && ref.size >= 4) { // at least 1h consistent block
+        const startMin = Math.min(...ref);
+        const endMin = Math.max(...ref) + 15;
+        const startStr = formatTime(Math.floor(startMin / 60), startMin % 60);
+        const endStr = formatTime(Math.floor(endMin / 60), endMin % 60);
+        insights.push({ icon: '<i class="fa-solid fa-robot"></i>', text: `<strong>The consistent one:</strong> ${shortName(n)} marked <span class="hl">${startStr}–${endStr}</span> on all ${activeDayKeys.length} days — clockwork precision` });
+        break;
+      }
+    }
+  }
+
+  // --- 27. The Social Butterfly — person with the most total overlap with everyone ---
+  if (activeIndices.length >= 4) {
+    // Sum total overlap slots between this person and all others
+    const totalOv = {};
+    for (const idx of activeIndices) totalOv[idx] = 0;
+    for (let ii = 0; ii < activeIndices.length; ii++) {
+      for (let jj = ii + 1; jj < activeIndices.length; jj++) {
+        const i = activeIndices[ii], j = activeIndices[jj];
+        const ov = overlap[`${i}:${j}`];
+        totalOv[i] += ov;
+        totalOv[j] += ov;
+      }
+    }
+    const ranked = [...activeIndices].sort((a, b) => totalOv[b] - totalOv[a]);
+    const bestIdx = ranked[0], secondIdx = ranked[1];
+    const bestOv = totalOv[bestIdx], secondOv = totalOv[secondIdx];
+    const avgOv = activeIndices.reduce((s, i) => s + totalOv[i], 0) / activeIndices.length;
+    // Show if the butterfly has ≥25% more total overlap than #2, and ≥1.3× average
+    if (bestOv > secondOv * 1.25 && bestOv >= avgOv * 1.3) {
+      const bestHrs = (bestOv * 0.25).toFixed(0);
+      insights.push({ icon: '<i class="fa-solid fa-wand-magic-sparkles"></i>', text: `<strong>Social butterfly:</strong> ${shortName(names[bestIdx])} has <span class="hl">${bestHrs}h</span> of combined overlap with everyone — most broadly compatible person` });
+    }
+  }
+
+  // --- 28. Availability Desert — 2+ hour dead zone where nobody is free ---
+  {
+    let worstDesert = null;
+    for (const dk of STATE.days) {
+      const daySlots = STATE.dayMap[dk].slots;
+      let run = 0, bestRun = 0, bestStart = 0, runStart = 0;
+      for (let i = 0; i < daySlots.length; i++) {
+        if (daySlots[i].available.size === 0) {
+          if (run === 0) runStart = i;
+          run++;
+          if (run > bestRun) { bestRun = run; bestStart = runStart; }
+        } else { run = 0; }
+      }
+      if (bestRun >= 8) { // 8 × 15min = 2h
+        const hrs = bestRun * 0.25;
+        const dayName = STATE.dayNames[STATE.days.indexOf(dk)];
+        const startSlot = daySlots[bestStart];
+        const startStr = formatTime(startSlot.h, startSlot.m);
+        if (!worstDesert || hrs > worstDesert.hrs) {
+          worstDesert = { day: dayName, hrs, startStr };
+        }
+      }
+    }
+    if (worstDesert) {
+      insights.push({ icon: '<i class="fa-solid fa-temperature-empty"></i>', text: `<strong>Availability desert:</strong> <span class="warn">${worstDesert.hrs}h dead zone</span> on ${worstDesert.day} starting ${worstDesert.startStr} — nobody is free` });
+    }
+  }
+
+  // --- 29. The Clustering — group splits into early crew vs late crew ---
+  if (activeIndices.length >= 5) {
+    // Compute each person's average available hour
+    const personAvgH = {};
+    for (const idx of activeIndices) {
+      const n = names[idx];
+      let sumH = 0, cnt = 0;
+      for (const s of slots) {
+        if (s.available.has(n)) { sumH += s.h + s.m / 60; cnt++; }
+      }
+      personAvgH[idx] = cnt > 0 ? sumH / cnt : 0;
+    }
+    // Split at the median average hour (data-driven, not fixed noon)
+    const avgHours = activeIndices.map(i => personAvgH[i]).sort((a, b) => a - b);
+    const medianH = avgHours[Math.floor(avgHours.length / 2)];
+    const earlyGroup = activeIndices.filter(i => personAvgH[i] < medianH);
+    const lateGroup = activeIndices.filter(i => personAvgH[i] >= medianH);
+    if (earlyGroup.length >= 2 && lateGroup.length >= 2) {
+      // Check if the two groups have meaningfully different scheduling overlap
+      let withinOv = 0, withinN = 0;
+      for (const group of [earlyGroup, lateGroup]) {
+        for (let i = 0; i < group.length; i++)
+          for (let j = i + 1; j < group.length; j++) {
+            withinOv += overlap[`${Math.min(group[i],group[j])}:${Math.max(group[i],group[j])}`] || 0;
+            withinN++;
+          }
+      }
+      let crossOv = 0, crossN = 0;
+      for (const e of earlyGroup)
+        for (const l of lateGroup) {
+          crossOv += overlap[`${Math.min(e,l)}:${Math.max(e,l)}`] || 0;
+          crossN++;
+        }
+      const avgWithin = withinN > 0 ? withinOv / withinN : 0;
+      const avgCross = crossN > 0 ? crossOv / crossN : 0;
+      // Show if within-group overlap is notably higher than cross-group
+      if (avgWithin > 0 && avgCross > 0 && avgWithin >= avgCross * 1.5) {
+        const earlyAvg = earlyGroup.reduce((s, i) => s + personAvgH[i], 0) / earlyGroup.length;
+        const lateAvg = lateGroup.reduce((s, i) => s + personAvgH[i], 0) / lateGroup.length;
+        const earlyLabel = earlyAvg < 12 ? 'morning' : 'earlier';
+        const lateLabel = lateAvg >= 17 ? 'evening' : 'later';
+        insights.push({ icon: '<i class="fa-solid fa-arrows-split-up-and-left"></i>', text: `<strong>Two worlds:</strong> ${earlyGroup.length} ${earlyLabel} people vs ${lateGroup.length} ${lateLabel} people — the group naturally splits into two scheduling crews` });
+      }
+    }
+  }
+
+  // --- 30. Crowd Favorite Day — supermajority agree on one best day ---
+  if (STATE.days.length >= 3 && activeIndices.length >= 4) {
+    const dayVotes = {};
+    for (const dk of STATE.days) dayVotes[dk] = 0;
+    for (const idx of activeIndices) {
+      const n = names[idx];
+      let bestDay = null, bestH = 0;
+      for (const dk of STATE.days) {
+        const h = personDayH[n][dk] || 0;
+        if (h > bestH) { bestH = h; bestDay = dk; }
+      }
+      if (bestDay) dayVotes[bestDay]++;
+    }
+    const [topDay, topVotes] = Object.entries(dayVotes).sort((a, b) => b[1] - a[1])[0];
+    const pct = Math.round(topVotes / activeIndices.length * 100);
+    if (pct >= 60 && topVotes >= 3) {
+      const dayName = STATE.dayNames[STATE.days.indexOf(topDay)];
+      insights.push({ icon: '<i class="fa-solid fa-star"></i>', text: `<strong>Crowd favorite:</strong> <span class="hl">${topVotes}/${activeIndices.length}</span> people are most available on ${dayName} — the clear winner` });
+    }
+  }
+
+  // --- 31. Mirror Schedules — two people who together cover lots but never overlap ---
+  if (activeIndices.length >= 2) {
+    let bestMirror = null;
+    const totalSlots = slots.length;
+    for (let ii = 0; ii < activeIndices.length && !bestMirror; ii++) {
+      for (let jj = ii + 1; jj < activeIndices.length; jj++) {
+        const i = activeIndices[ii], j = activeIndices[jj];
+        const ov = overlap[`${i}:${j}`];
+        const sA = Math.round(getTotalHours(names[i]) / 0.25);
+        const sB = Math.round(getTotalHours(names[j]) / 0.25);
+        const union = sA + sB - ov;
+        const smaller = Math.min(sA, sB);
+        // High coverage (≥70% of all slots) but minimal overlap (≤10% of smaller person)
+        if (union >= totalSlots * 0.7 && smaller >= 8 && ov <= smaller * 0.1) {
+          const coverPct = Math.round(union / totalSlots * 100);
+          bestMirror = { a: names[i], b: names[j], coverPct, ov };
+          break;
+        }
+      }
+    }
+    if (bestMirror) {
+      insights.push({ icon: '<i class="fa-solid fa-arrows-rotate"></i>', text: `<strong>Mirror schedules:</strong> ${shortName(bestMirror.a)} + ${shortName(bestMirror.b)} cover <span class="hl">${bestMirror.coverPct}%</span> of slots together but ${bestMirror.ov === 0 ? 'never' : 'almost never'} overlap — scheduling yin and yang` });
+    }
+  }
+
   return insights;
 }
 
