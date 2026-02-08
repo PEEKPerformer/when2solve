@@ -865,37 +865,67 @@ function solve() {
 
   // Automatically compute pairs when no single meeting covers everyone
   if (!singleCovers && windows.length >= 2) {
-    // Find best pairs
-    const topN = Math.min(windows.length, 60); // limit search
+    const topN = Math.min(windows.length, 60);
     let bestPairs = [];
     for (let i = 0; i < topN; i++) {
       for (let j = i + 1; j < topN; j++) {
         const a = windows[i], b = windows[j];
+
+        // Skip adjacent or overlapping windows on the same day —
+        // that's just one longer meeting, not a real two-meeting plan
+        if (a.dayKey === b.dayKey) {
+          const aEnd = a.endH * 60 + a.endM;
+          const bStart = b.startH * 60 + b.startM;
+          const bEnd = b.endH * 60 + b.endM;
+          const aStart = a.startH * 60 + a.startM;
+          if (aEnd >= bStart && aStart <= bEnd) continue;  // overlapping or adjacent
+        }
+
         const union = new Set([...a.attendees, ...b.attendees]);
         const uncovered = [...allNames].filter(n => !union.has(n));
-        const score = union.size * 1000 + Math.min(a.count, b.count);
         const diffDay = a.dayKey !== b.dayKey;
+
+        // Marginal value: how many NEW people does B bring that A doesn't have?
+        const marginalB = [...b.attendees].filter(n => !a.attendees.has(n)).length;
+        const marginalA = [...a.attendees].filter(n => !b.attendees.has(n)).length;
+        const marginal = Math.max(marginalA, marginalB);
+
+        // Score: coverage first, then marginal value, then balanced attendance
+        const score = union.size * 10000 + marginal * 100 + Math.min(a.count, b.count);
+
         bestPairs.push({
           key: `${a.key}|${b.key}`,
-          a, b, union, uncovered, score, diffDay,
+          a, b, union, uncovered, score, diffDay, marginal,
           coverage: union.size,
         });
       }
     }
-    // Sort: full coverage first, then prefer different days, then balanced attendance
+
+    // Sort: coverage → different days → marginal value → balanced attendance
     bestPairs.sort((x, y) => {
       if (y.coverage !== x.coverage) return y.coverage - x.coverage;
       if (x.diffDay !== y.diffDay) return x.diffDay ? -1 : 1;
+      if (y.marginal !== x.marginal) return y.marginal - x.marginal;
       return y.score - x.score;
     });
-    // Deduplicate pairs: skip if both meetings overlap pairwise with an already-shown pair
+
+    // Deduplicate: skip if both meetings overlap pairwise with an existing pair,
+    // OR if the covered set is identical to an already-shown plan
     const dedupedPairs = [];
+    const seenCoverage = new Set();
     for (const p of bestPairs) {
+      // Skip if same coverage set as a previous plan
+      const coverKey = [...p.union].sort().join(',');
+      if (seenCoverage.has(coverKey)) continue;
+
       const similar = dedupedPairs.some(d =>
         (windowsOverlap(d.a, p.a) && windowsOverlap(d.b, p.b)) ||
         (windowsOverlap(d.a, p.b) && windowsOverlap(d.b, p.a))
       );
-      if (!similar) dedupedPairs.push(p);
+      if (!similar) {
+        dedupedPairs.push(p);
+        seenCoverage.add(coverKey);
+      }
     }
     results.pairs = dedupedPairs.slice(0, 6);
   }
@@ -913,8 +943,10 @@ function solve() {
     if (bestSol) {
       const missing = bestSol.uncovered;
       if (missing.length > 0 && missing.length <= 2) {
-        // Check what slot extension would help
-        results.suggestion = `${missing.join(' & ')} can't make any combination. Check if they can extend availability on ${bestSol.a.dayName} or ${bestSol.b.dayName}.`;
+        const days = bestSol.a.dayName === bestSol.b.dayName
+          ? bestSol.a.dayName
+          : `${bestSol.a.dayName} or ${bestSol.b.dayName}`;
+        results.suggestion = `${missing.join(' & ')} can't make any combination. Check if they can extend availability on ${days}.`;
       }
     }
   }
@@ -1293,13 +1325,24 @@ function computeInsights() {
     }
   }
 
-  // --- 1. Early Bird / Night Owl ---
-  let earliestPerson = names[0], latestPerson = names[0];
-  for (const n of names) {
-    if (personEarliest[n] < personEarliest[earliestPerson]) earliestPerson = n;
-    if (personLatest[n] > personLatest[latestPerson]) latestPerson = n;
+  // --- 0. Zero-hours callout — people who signed up but marked nothing ---
+  const zeroNames = hours.filter(h => h.h === 0).map(h => h.name);
+  if (zeroNames.length > 0) {
+    const who = zeroNames.length === 1
+      ? `<strong>${shortName(zeroNames[0])}</strong> has`
+      : `<strong>${zeroNames.map(shortName).join(', ')}</strong> have`;
+    insights.push({ icon: '<i class="fa-solid fa-ghost"></i>', text: `${who} <span class="warn">zero availability</span> — they may not have filled it out yet` });
   }
-  if (earliestPerson !== latestPerson) {
+
+  // --- 1. Early Bird / Night Owl ---
+  // Skip zero-hours people
+  let earliestPerson = null, latestPerson = null;
+  for (const n of names) {
+    if (getTotalHours(n) === 0) continue; // skip zero-hours people
+    if (!earliestPerson || personEarliest[n] < personEarliest[earliestPerson]) earliestPerson = n;
+    if (!latestPerson || personLatest[n] > personLatest[latestPerson]) latestPerson = n;
+  }
+  if (earliestPerson && latestPerson && earliestPerson !== latestPerson) {
     const eTime = formatTime(Math.floor(personEarliest[earliestPerson]), Math.round((personEarliest[earliestPerson] % 1) * 60));
     const lH = personLatest[latestPerson];
     const lTime = formatTime(Math.floor(lH), Math.round((lH % 1) * 60));
@@ -1333,27 +1376,41 @@ function computeInsights() {
   }
 
   // --- 3. Best Buds (most overlap pair) ---
+  // Only consider people with >0 hours (skip zero-availability ghosts)
   let maxOv = 0, bestPair = null;
   let minOv = Infinity, hardPair = null;
+  const activeIndices = [];
   for (let i = 0; i < N; i++) {
-    for (let j = i + 1; j < N; j++) {
+    if (getTotalHours(names[i]) > 0) activeIndices.push(i);
+  }
+  for (let ii = 0; ii < activeIndices.length; ii++) {
+    for (let jj = ii + 1; jj < activeIndices.length; jj++) {
+      const i = activeIndices[ii], j = activeIndices[jj];
       const c = overlap[`${i}:${j}`];
       if (c > maxOv) { maxOv = c; bestPair = [names[i], names[j]]; }
       if (c < minOv) { minOv = c; hardPair = [names[i], names[j]]; }
     }
   }
   if (bestPair && maxOv > 0) {
-    insights.push({ icon: '<i class="fa-solid fa-user-group"></i>', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${fmtHrs(maxOv)}</span> — easiest pair to co-schedule` });
+    // Show as percentage of the smaller person's availability for readability
+    const aSz = slots.filter(s => s.available.has(bestPair[0])).length;
+    const bSz = slots.filter(s => s.available.has(bestPair[1])).length;
+    const smaller = Math.min(aSz, bSz);
+    const pct = smaller > 0 ? Math.round(maxOv / smaller * 100) : 0;
+    insights.push({ icon: '<i class="fa-solid fa-user-group"></i>', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} share <span class="hl">${pct}%</span> of their availability — easiest pair to co-schedule` });
   }
 
   // --- 4. Ships in the Night (hardest pair) ---
-  if (hardPair && minOv * 0.25 <= 4) {
+  if (hardPair && minOv === 0) {
+    insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} have <span class="warn">zero overlap</span> — never available at the same time` });
+  } else if (hardPair && minOv * 0.25 <= 2) {
     insights.push({ icon: '<i class="fa-solid fa-right-left"></i>', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
   }
 
   // --- 5. Unanimous Windows ---
-  // Group contiguous unanimous slots into windows so Mon 9:00-10:30 = 1 window, not 6 "slots"
-  if (N >= 3) {
+  // Group contiguous unanimous slots into windows. Only show for groups ≤ 10 —
+  // for larger groups, unanimous slots are nearly impossible and the insight is noise.
+  if (N >= 3 && N <= 10) {
     const unanBlocks = [];
     for (const dk of STATE.days) {
       const daySlots = STATE.dayMap[dk].slots;
@@ -1554,13 +1611,18 @@ function computeInsights() {
   }
 
   // --- 16. Three's a Crowd — three people who pair up fine but never all overlap ---
-  if (N >= 4) {
+  // Only for groups ≤ 10 — with many people, bad trios are statistically guaranteed and uninteresting
+  if (N >= 4 && N <= 10) {
     let crowd = null;
     outer: for (let i = 0; i < N && !crowd; i++) {
+      if (getTotalHours(names[i]) === 0) continue;
       for (let j = i + 1; j < N && !crowd; j++) {
+        if (getTotalHours(names[j]) === 0) continue;
         for (let k = j + 1; k < N; k++) {
+          if (getTotalHours(names[k]) === 0) continue;
           const ij = overlap[`${i}:${j}`], ik = overlap[`${i}:${k}`], jk = overlap[`${j}:${k}`];
-          if (ij >= 2 && ik >= 2 && jk >= 2) {
+          // Require meaningful pairwise overlap (≥ 1 hour each)
+          if (ij >= 4 && ik >= 4 && jk >= 4) {
             // Check if all three are ever simultaneously free
             let tripleCount = 0;
             for (const s of slots) {
@@ -1582,9 +1644,10 @@ function computeInsights() {
     }
   }
 
-  // --- 17. The Split Shift — someone with a midday gap ---
+  // --- 17. The Split Shift — someone with a midday gap (requires ≥ 1h gap) ---
   {
     for (const n of names) {
+      if (getTotalHours(n) === 0) continue;
       let foundSplit = false;
       for (const dk of STATE.days) {
         const daySlots = STATE.dayMap[dk].slots;
@@ -1595,7 +1658,7 @@ function computeInsights() {
           if (state === 'before' && avail[i]) state = 'in';
           else if (state === 'in' && !avail[i]) { state = 'gap'; gapLen = 1; }
           else if (state === 'gap' && !avail[i]) gapLen++;
-          else if (state === 'gap' && avail[i] && gapLen >= 2) { foundSplit = true; break; }
+          else if (state === 'gap' && avail[i] && gapLen >= 4) { foundSplit = true; break; }
           else if (state === 'gap' && avail[i]) state = 'in'; // small blip, reset
         }
         if (foundSplit) {
@@ -1614,8 +1677,11 @@ function computeInsights() {
     // Simpler approach: find the group with most shared slots (all simultaneously free)
     let bestCrew = null, bestCrewSlots = 0;
     for (let i = 0; i < N; i++) {
+      if (getTotalHours(names[i]) === 0) continue;
       for (let j = i + 1; j < N; j++) {
+        if (getTotalHours(names[j]) === 0) continue;
         for (let k = j + 1; k < N; k++) {
+          if (getTotalHours(names[k]) === 0) continue;
           let shared = 0;
           for (const s of slots) {
             if (s.available.has(names[i]) && s.available.has(names[j]) && s.available.has(names[k])) shared++;
