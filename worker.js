@@ -55,11 +55,10 @@ export default {
 };
 
 function parse(html) {
-  // Extract event title from <title> tag
+  // Extract event title from <title> tag, strip "- When2meet" suffix
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   const rawTitle = titleMatch ? titleMatch[1].trim() : '';
-  // When2Meet titles are just the event name (no prefix to strip)
-  const eventName = rawTitle;
+  const eventName = rawTitle.replace(/\s*[-–—]\s*when2meet\s*$/i, '').trim();
 
   // PeopleNames[N] = 'Name';
   const names = [];
