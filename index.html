@@ -830,8 +830,12 @@ function renderDecisions() {
     // Hero — the #1 pick, big and confident
     container.appendChild(renderHero(singles[0], sortedNames));
 
-    // Runner-ups — 2-3 alternatives
-    const runners = singles.slice(1, 4);
+    // Calculate how many runner-up columns fit at current width (no orphan gaps)
+    const gridMinCol = 210; // matches .runners-grid minmax
+    const cols = Math.max(1, Math.floor(container.offsetWidth / gridMinCol));
+    const runnerCount = Math.min(singles.length - 1, cols); // fill exactly one row
+
+    const runners = singles.slice(1, 1 + runnerCount);
     if (runners.length > 0) {
       container.insertAdjacentHTML('beforeend', `<div class="section-head">Alternatives</div>`);
       const grid = document.createElement('div');
@@ -845,7 +849,7 @@ function renderDecisions() {
     }
 
     // Show more — remaining options behind toggle
-    const rest = singles.slice(4);
+    const rest = singles.slice(1 + runnerCount);
     if (rest.length > 0) {
       const moreId = 'moreSingles';
       container.insertAdjacentHTML('beforeend',
