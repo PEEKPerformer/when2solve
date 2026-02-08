@@ -937,20 +937,29 @@ function computeInsights() {
   }
 
   // --- 2. Morning vs Afternoon team ---
-  let morningSlots = 0, afternoonSlots = 0;
+  // Normalize by number of slots in each period so 9am-4pm doesn't auto-skew afternoon
+  let mAvail = 0, mPossible = 0, aAvail = 0, aPossible = 0;
   for (const s of slots) {
-    const count = s.available.size;
-    if (s.h < 12) morningSlots += count;
-    else afternoonSlots += count;
+    if (s.h < 12) { mAvail += s.available.size; mPossible += N; }
+    else { aAvail += s.available.size; aPossible += N; }
   }
-  const total = morningSlots + afternoonSlots;
-  if (total > 0) {
-    const mPct = Math.round(morningSlots / total * 100);
-    const aPct = 100 - mPct;
-    const skew = mPct > 60 ? 'mornings' : aPct > 60 ? 'afternoons' : null;
-    if (skew) {
-      insights.push({ icon: skew === 'mornings' ? '☀️' : '🌙', text: `The team skews toward <strong>${skew}</strong> — ${Math.max(mPct,aPct)}% of availability is ${skew === 'mornings' ? 'before noon' : 'after noon'}` });
+  if (mPossible > 0 && aPossible > 0) {
+    const mRate = Math.round(mAvail / mPossible * 100);
+    const aRate = Math.round(aAvail / aPossible * 100);
+    const diff = Math.abs(mRate - aRate);
+    if (diff > 15) {
+      const skew = mRate > aRate ? 'mornings' : 'afternoons';
+      const pct = Math.max(mRate, aRate);
+      insights.push({ icon: skew === 'mornings' ? '☀️' : '🌙', text: `The team skews toward <strong>${skew}</strong> — ${pct}% fill rate ${skew === 'mornings' ? 'before noon' : 'after noon'} vs ${Math.min(mRate,aRate)}% ${skew === 'mornings' ? 'after' : 'before'}` });
     }
+  }
+
+  // --- Helper: display hours/minutes nicely ---
+  function fmtHrs(slots) {
+    const h = slots * 0.25;
+    if (h === 0) return 'never';
+    if (h < 1) return `${Math.round(h * 60)}min`;
+    return `${h % 1 === 0 ? h : h.toFixed(1)}h`;
   }
 
   // --- 3. Best Buds (most overlap pair) ---
@@ -964,13 +973,12 @@ function computeInsights() {
     }
   }
   if (bestPair && maxOv > 0) {
-    insights.push({ icon: '🤝', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${(maxOv * 0.25).toFixed(0)}h</span> — easiest pair to co-schedule` });
+    insights.push({ icon: '🤝', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${fmtHrs(maxOv)}</span> — easiest pair to co-schedule` });
   }
 
   // --- 4. Ships in the Night (hardest pair) ---
   if (hardPair && minOv * 0.25 <= 4) {
-    const hrs = (minOv * 0.25);
-    insights.push({ icon: '🚢', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${hrs > 0 ? hrs.toFixed(0) + 'h' : 'never'}</span> — hardest to get in a room together` });
+    insights.push({ icon: '🚢', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
   }
 
   // --- 5. Unanimous Windows ---
@@ -1010,22 +1018,28 @@ function computeInsights() {
 
   // --- 6. The Linchpin ---
   // Who, if removed, opens the most new full-attendance windows?
+  // Deduplicate overlapping windows so we count distinct time blocks, not 15-min shifts
   const r = STATE.currentResults;
   if (r && r.single.length > 0) {
     const bestCount = r.single[0].count;
     if (bestCount < N) {
+      const allWindows = r.windows || r.single;
       let bestGain = 0, linchpin = null;
       for (const n of names) {
-        // How many windows reach (N-1) if we ignore this person?
-        let fullWithout = 0;
-        for (const w of (r.windows || r.single)) {
-          const without = w.attendees.has(n) ? w.count - 1 : w.count;
-          if (without >= N - 1) fullWithout++;
+        // Collect windows that become full if this person is dropped
+        const full = allWindows.filter(w => {
+          const ct = w.attendees.has(n) ? w.count - 1 : w.count;
+          return ct >= N - 1;
+        });
+        // Deduplicate overlapping windows
+        const deduped = [];
+        for (const w of full) {
+          if (!deduped.some(d => windowsOverlap(d, w))) deduped.push(w);
         }
-        if (fullWithout > bestGain) { bestGain = fullWithout; linchpin = n; }
+        if (deduped.length > bestGain) { bestGain = deduped.length; linchpin = n; }
       }
       if (linchpin && bestGain > 0) {
-        insights.push({ icon: '🔑', text: `<strong>The linchpin:</strong> ${shortName(linchpin)} — removing them as required would unlock <span class="hl">${bestGain}</span> perfect-attendance options` });
+        insights.push({ icon: '🔑', text: `<strong>The linchpin:</strong> ${shortName(linchpin)} — dropping them as required would unlock <span class="hl">${bestGain}</span> perfect-attendance ${bestGain === 1 ? 'window' : 'windows'}` });
       }
     }
   }
@@ -1052,8 +1066,8 @@ function computeInsights() {
   }
 
   // --- 8. The Minimalist / The Accommodator ---
-  if (least.h < most.h * 0.5 && N >= 4) {
-    insights.push({ icon: '📐', text: `<strong>${shortName(least.name)}</strong> offered ${least.h.toFixed(0)}h — <strong>${shortName(most.name)}</strong> offered ${most.h.toFixed(0)}h <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
+  if (least.h > 0 && least.h < most.h * 0.5 && N >= 4) {
+    insights.push({ icon: '📐', text: `<strong>${shortName(least.name)}</strong> offered ${fmtHrs(Math.round(least.h / 0.25))} — <strong>${shortName(most.name)}</strong> offered ${fmtHrs(Math.round(most.h / 0.25))} <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
   }
 
   // --- 9. "If only..." nudge ---
