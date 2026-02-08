@@ -6,7 +6,7 @@
 <title>When2Solve — When2Meet Optimizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 /*═══════════════════════════════════════════════════════════════
   RESET & ROOT
@@ -161,10 +161,9 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /*── Insights ──*/
 .insights-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem}
-.insight-item{display:flex;align-items:center;gap:.6rem;padding:.45rem 0;font-size:.85rem;color:var(--text-secondary);line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.03)}
+.insight-item{display:flex;align-items:baseline;gap:.6rem;padding:.45rem 0;font-size:.85rem;color:var(--text-secondary);line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.03)}
 .insight-item:last-child{border-bottom:none}
-.insight-icon{flex-shrink:0;width:18px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
-.insight-icon svg{width:15px;height:15px;stroke-width:1.8}
+.insight-icon{flex-shrink:0;width:1rem;text-align:center;font-size:.78rem;color:var(--text-muted)}
 .insight-item strong{color:var(--text-primary);font-weight:600}
 .insight-item .hl{color:#22d3ee}
 .insight-item .warn{color:#fbbf24}
@@ -972,7 +971,6 @@ function renderInsights(container) {
   });
   panel.innerHTML = html;
   container.appendChild(panel);
-  if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide', attrs: { class: '' } });
 }
 
 function computeInsights() {
@@ -1027,7 +1025,7 @@ function computeInsights() {
     const eTime = formatTime(Math.floor(personEarliest[earliestPerson]), Math.round((personEarliest[earliestPerson] % 1) * 60));
     const lH = personLatest[latestPerson];
     const lTime = formatTime(Math.floor(lH), Math.round((lH % 1) * 60));
-    insights.push({ icon: '<i data-lucide="sunrise">', text: `<strong>${shortName(earliestPerson)}</strong> is the early bird (from ${eTime}) — <strong>${shortName(latestPerson)}</strong> is the night owl (until ${lTime})` });
+    insights.push({ icon: '<i class="fa-solid fa-sun">', text: `<strong>${shortName(earliestPerson)}</strong> is the early bird (from ${eTime}) — <strong>${shortName(latestPerson)}</strong> is the night owl (until ${lTime})` });
   }
 
   // --- 2. Morning vs Afternoon team ---
@@ -1044,7 +1042,7 @@ function computeInsights() {
     if (diff > 15) {
       const skew = mRate > aRate ? 'mornings' : 'afternoons';
       const pct = Math.max(mRate, aRate);
-      insights.push({ icon: skew === 'mornings' ? '<i data-lucide="sun">' : '<i data-lucide="moon">', text: `The team skews toward <strong>${skew}</strong> — ${pct}% fill rate ${skew === 'mornings' ? 'before noon' : 'after noon'} vs ${Math.min(mRate,aRate)}% ${skew === 'mornings' ? 'after' : 'before'}` });
+      insights.push({ icon: skew === 'mornings' ? '<i class="fa-solid fa-sun">' : '<i class="fa-solid fa-moon">', text: `The team skews toward <strong>${skew}</strong> — ${pct}% fill rate ${skew === 'mornings' ? 'before noon' : 'after noon'} vs ${Math.min(mRate,aRate)}% ${skew === 'mornings' ? 'after' : 'before'}` });
     }
   }
 
@@ -1067,12 +1065,12 @@ function computeInsights() {
     }
   }
   if (bestPair && maxOv > 0) {
-    insights.push({ icon: '<i data-lucide="users">', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${fmtHrs(maxOv)}</span> — easiest pair to co-schedule` });
+    insights.push({ icon: '<i class="fa-solid fa-user-group">', text: `<strong>Best buds:</strong> ${shortName(bestPair[0])} + ${shortName(bestPair[1])} overlap <span class="hl">${fmtHrs(maxOv)}</span> — easiest pair to co-schedule` });
   }
 
   // --- 4. Ships in the Night (hardest pair) ---
   if (hardPair && minOv * 0.25 <= 4) {
-    insights.push({ icon: '<i data-lucide="arrow-left-right">', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
+    insights.push({ icon: '<i class="fa-solid fa-right-left">', text: `<strong>Ships in the night:</strong> ${shortName(hardPair[0])} + ${shortName(hardPair[1])} overlap only <span class="warn">${fmtHrs(minOv)}</span> — hardest to get in a room together` });
   }
 
   // --- 5. Unanimous Windows ---
@@ -1098,7 +1096,7 @@ function computeInsights() {
       }
     }
     if (unanBlocks.length === 0) {
-      insights.push({ icon: '<i data-lucide="target">', text: `<span class="warn">Zero</span> unanimous windows — no contiguous block works for everyone` });
+      insights.push({ icon: '<i class="fa-solid fa-bullseye">', text: `<span class="warn">Zero</span> unanimous windows — no contiguous block works for everyone` });
     } else {
       const descs = unanBlocks.map(b => {
         const dur = (b.len * 0.25);
@@ -1106,7 +1104,7 @@ function computeInsights() {
         return `${b.dayName} ${shortTime(b.start.h, b.start.m)} (${durStr})`;
       });
       const label = unanBlocks.length === 1 ? '1 unanimous window' : `${unanBlocks.length} unanimous windows`;
-      insights.push({ icon: '<i data-lucide="target">', text: `<span class="hl">${label}</span> where the whole team is free: ${descs.join(', ')}` });
+      insights.push({ icon: '<i class="fa-solid fa-bullseye">', text: `<span class="hl">${label}</span> where the whole team is free: ${descs.join(', ')}` });
     }
   }
 
@@ -1133,7 +1131,7 @@ function computeInsights() {
         if (deduped.length > bestGain) { bestGain = deduped.length; linchpin = n; }
       }
       if (linchpin && bestGain > 0) {
-        insights.push({ icon: '<i data-lucide="key-round">', text: `<strong>The linchpin:</strong> ${shortName(linchpin)} — dropping them as required would unlock <span class="hl">${bestGain}</span> perfect-attendance ${bestGain === 1 ? 'window' : 'windows'}` });
+        insights.push({ icon: '<i class="fa-solid fa-key">', text: `<strong>The linchpin:</strong> ${shortName(linchpin)} — dropping them as required would unlock <span class="hl">${bestGain}</span> perfect-attendance ${bestGain === 1 ? 'window' : 'windows'}` });
       }
     }
   }
@@ -1155,18 +1153,18 @@ function computeInsights() {
     if (dropPct > 25) {
       const worstName = STATE.dayNames[STATE.days.indexOf(worstDk)];
       const bestName = STATE.dayNames[STATE.days.indexOf(bestDk)];
-      insights.push({ icon: '<i data-lucide="calendar-off">', text: `<strong>Ghost day:</strong> ${worstName} has ${dropPct}% less availability than ${bestName}` });
+      insights.push({ icon: '<i class="fa-solid fa-calendar-xmark">', text: `<strong>Ghost day:</strong> ${worstName} has ${dropPct}% less availability than ${bestName}` });
     }
   }
 
   // --- 8. The Minimalist / The Accommodator ---
   if (least.h > 0 && least.h < most.h * 0.5 && N >= 4) {
-    insights.push({ icon: '<i data-lucide="scale">', text: `<strong>${shortName(least.name)}</strong> offered ${fmtHrs(Math.round(least.h / 0.25))} — <strong>${shortName(most.name)}</strong> offered ${fmtHrs(Math.round(most.h / 0.25))} <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
+    insights.push({ icon: '<i class="fa-solid fa-scale-balanced">', text: `<strong>${shortName(least.name)}</strong> offered ${fmtHrs(Math.round(least.h / 0.25))} — <strong>${shortName(most.name)}</strong> offered ${fmtHrs(Math.round(most.h / 0.25))} <span class="soft">(${(most.h / least.h).toFixed(1)}× more)</span>` });
   }
 
   // --- 9. "If only..." nudge ---
   if (STATE.currentResults && STATE.currentResults.suggestion) {
-    insights.push({ icon: '<i data-lucide="lightbulb">', text: STATE.currentResults.suggestion });
+    insights.push({ icon: '<i class="fa-solid fa-lightbulb">', text: STATE.currentResults.suggestion });
   }
 
   // --- 10. Lunch Hour Crunch ---
@@ -1180,7 +1178,7 @@ function computeInsights() {
   if (lunchSlots > 0) {
     const lunchPct = Math.round(lunchAvail / (lunchSlots * N) * 100);
     if (lunchPct < 50) {
-      insights.push({ icon: '<i data-lucide="utensils">', text: `Only <span class="warn">${lunchPct}%</span> of the team is free over lunch (12–1 PM) — slim pickings for a midday meeting` });
+      insights.push({ icon: '<i class="fa-solid fa-utensils">', text: `Only <span class="warn">${lunchPct}%</span> of the team is free over lunch (12–1 PM) — slim pickings for a midday meeting` });
     }
   }
 
