@@ -830,39 +830,35 @@ function renderDecisions() {
     // Hero — the #1 pick, big and confident
     container.appendChild(renderHero(singles[0], sortedNames));
 
-    // Calculate how many runner-up columns fit at current width (no orphan gaps)
-    const gridMinCol = 210; // matches .runners-grid minmax
-    const cols = Math.max(1, Math.floor(container.offsetWidth / gridMinCol));
-    const runnerCount = Math.min(singles.length - 1, cols); // fill exactly one row
-
-    const runners = singles.slice(1, 1 + runnerCount);
-    if (runners.length > 0) {
+    // Render all runners into grid, measure actual CSS columns, trim to full rows
+    const allRunners = singles.slice(1);
+    if (allRunners.length > 0) {
       container.insertAdjacentHTML('beforeend', `<div class="section-head">Alternatives</div>`);
       const grid = document.createElement('div');
       grid.className = 'runners-grid';
-      runners.forEach((win, i) => {
-        const card = renderSingleCard(win, sortedNames);
-        card.style.animationDelay = `${i * 0.06}s`;
-        grid.appendChild(card);
-      });
+      allRunners.forEach(win => grid.appendChild(renderSingleCard(win, sortedNames)));
       container.appendChild(grid);
-    }
 
-    // Show more — remaining options behind toggle
-    const rest = singles.slice(1 + runnerCount);
-    if (rest.length > 0) {
-      const moreId = 'moreSingles';
-      container.insertAdjacentHTML('beforeend',
-        `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${rest.length} more option${rest.length > 1 ? 's' : ''}</div>`);
-      const moreGrid = document.createElement('div');
-      moreGrid.className = 'more-options more-grid';
-      moreGrid.id = moreId;
-      rest.forEach((win, i) => {
-        const card = renderSingleCard(win, sortedNames);
-        card.style.animationDelay = `${i * 0.05}s`;
-        moreGrid.appendChild(card);
-      });
-      container.appendChild(moreGrid);
+      // Measure real column count from CSS grid
+      const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+      // Collect overflow cards (anything beyond one full row)
+      const overflow = [];
+      while (grid.children.length > cols) {
+        overflow.unshift(grid.removeChild(grid.lastChild));
+      }
+      [...grid.children].forEach((c, i) => { c.style.animationDelay = `${i * 0.06}s`; });
+
+      // Put overflow behind "show more"
+      if (overflow.length > 0) {
+        const moreId = 'moreSingles';
+        container.insertAdjacentHTML('beforeend',
+          `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${overflow.length} more option${overflow.length > 1 ? 's' : ''}</div>`);
+        const moreGrid = document.createElement('div');
+        moreGrid.className = 'more-options more-grid';
+        moreGrid.id = moreId;
+        overflow.forEach((card, i) => { card.style.animationDelay = `${i * 0.05}s`; moreGrid.appendChild(card); });
+        container.appendChild(moreGrid);
+      }
     }
   }
 
