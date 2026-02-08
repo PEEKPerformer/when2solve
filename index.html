@@ -1183,6 +1183,177 @@ function computeInsights() {
     }
   }
 
+  // --- 11. The Anchor — someone available every single slot ---
+  {
+    const totalSlots = slots.length;
+    const anchors = names.filter(n => {
+      let c = 0;
+      for (const s of slots) { if (s.available.has(n)) c++; }
+      return c === totalSlots;
+    });
+    if (anchors.length === 1) {
+      insights.push({ icon: '<i class="fa-solid fa-anchor"></i>', text: `<strong>${shortName(anchors[0])}</strong> is available <span class="hl">every single slot</span> — the scheduling anchor` });
+    } else if (anchors.length > 1) {
+      insights.push({ icon: '<i class="fa-solid fa-anchor"></i>', text: `<span class="hl">${anchors.length} people</span> (${anchors.map(shortName).join(', ')}) are available every single slot` });
+    }
+  }
+
+  // --- 12. The Sniper — someone offered very little time ---
+  if (N >= 3) {
+    const snipers = hours.filter(h => h.h > 0 && h.h <= 1.5);
+    if (snipers.length === 1) {
+      insights.push({ icon: '<i class="fa-solid fa-crosshairs"></i>', text: `<strong>${shortName(snipers[0].name)}</strong> offered only <span class="warn">${fmtHrs(Math.round(snipers[0].h / 0.25))}</span> all week — every slot counts` });
+    } else if (snipers.length > 1 && snipers.length <= 3) {
+      insights.push({ icon: '<i class="fa-solid fa-crosshairs"></i>', text: `<span class="warn">${snipers.length} people</span> offered 1.5h or less each — tight windows to work with` });
+    }
+  }
+
+  // --- 13. The Twins — two people with >90% schedule overlap ---
+  if (N >= 3) {
+    let bestTwinPct = 0, twinPair = null;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const ov = overlap[`${i}:${j}`];
+        // Union = slotsA + slotsB - overlap
+        let sA = 0, sB = 0;
+        for (const s of slots) {
+          if (s.available.has(names[i])) sA++;
+          if (s.available.has(names[j])) sB++;
+        }
+        const union = sA + sB - ov;
+        if (union > 0) {
+          const pct = ov / union;
+          if (pct > bestTwinPct) { bestTwinPct = pct; twinPair = [names[i], names[j]]; }
+        }
+      }
+    }
+    if (bestTwinPct >= 0.9 && twinPair) {
+      insights.push({ icon: '<i class="fa-solid fa-clone"></i>', text: `<strong>${shortName(twinPair[0])}</strong> and <strong>${shortName(twinPair[1])}</strong> have <span class="hl">${Math.round(bestTwinPct * 100)}%</span> identical availability — scheduling clones` });
+    }
+  }
+
+  // --- 14. Friday Flight Risk — Friday drops >40% vs best day ---
+  {
+    const fridayKey = STATE.days.find(dk => {
+      const idx = STATE.days.indexOf(dk);
+      return STATE.dayNames[idx] === 'Friday';
+    });
+    if (fridayKey && dayEntries.length > 1) {
+      const friCount = dayTotals[fridayKey] || 0;
+      const bestDayEntry = dayEntries[dayEntries.length - 1];
+      if (bestDayEntry[0] !== fridayKey && bestDayEntry[1] > 0) {
+        const friDrop = Math.round((1 - friCount / bestDayEntry[1]) * 100);
+        if (friDrop >= 40) {
+          const bestDayName = STATE.dayNames[STATE.days.indexOf(bestDayEntry[0])];
+          insights.push({ icon: '<i class="fa-solid fa-plane-departure"></i>', text: `<strong>Friday flight risk:</strong> Friday has <span class="warn">${friDrop}%</span> less availability than ${bestDayName} — the weekend starts early` });
+        }
+      }
+    }
+  }
+
+  // --- 15. The Power Hour — one specific hour dramatically beats the rest ---
+  {
+    const hourBuckets = {};
+    for (const s of slots) {
+      const key = `${s.dayKey}:${s.h}`;
+      const dayName = STATE.dayNames[STATE.days.indexOf(s.dayKey)];
+      if (!hourBuckets[key]) hourBuckets[key] = { count: 0, slots: 0, dayName, h: s.h };
+      hourBuckets[key].count += s.available.size;
+      hourBuckets[key].slots++;
+    }
+    const buckets = Object.values(hourBuckets).filter(b => b.slots >= 2); // at least 30min
+    if (buckets.length >= 4) {
+      buckets.sort((a, b) => (b.count / b.slots) - (a.count / a.slots));
+      const top = buckets[0];
+      const avg = buckets.reduce((s, b) => s + b.count / b.slots, 0) / buckets.length;
+      const topAvg = top.count / top.slots;
+      if (topAvg >= N * 0.75 && topAvg > avg * 1.4) {
+        const timeStr = formatTime(top.h, 0).replace(':00 ', ' ');
+        const nextH = top.h + 1;
+        const endStr = formatTime(nextH, 0).replace(':00 ', ' ');
+        insights.push({ icon: '<i class="fa-solid fa-bolt"></i>', text: `<strong>Power hour:</strong> ${top.dayName} ${timeStr}–${endStr} is peak availability at <span class="hl">${Math.round(topAvg)}/${N}</span>` });
+      }
+    }
+  }
+
+  // --- 16. Three's a Crowd — three people who pair up fine but never all overlap ---
+  if (N >= 4) {
+    let crowd = null;
+    outer: for (let i = 0; i < N && !crowd; i++) {
+      for (let j = i + 1; j < N && !crowd; j++) {
+        for (let k = j + 1; k < N; k++) {
+          const ij = overlap[`${i}:${j}`], ik = overlap[`${i}:${k}`], jk = overlap[`${j}:${k}`];
+          if (ij >= 2 && ik >= 2 && jk >= 2) {
+            // Check if all three are ever simultaneously free
+            let tripleCount = 0;
+            for (const s of slots) {
+              if (s.available.has(names[i]) && s.available.has(names[j]) && s.available.has(names[k])) {
+                tripleCount++;
+                break;
+              }
+            }
+            if (tripleCount === 0) {
+              crowd = [names[i], names[j], names[k]];
+              break outer;
+            }
+          }
+        }
+      }
+    }
+    if (crowd) {
+      insights.push({ icon: '<i class="fa-solid fa-triangle-exclamation"></i>', text: `<strong>Three's a crowd:</strong> ${shortName(crowd[0])}, ${shortName(crowd[1])}, and ${shortName(crowd[2])} each pair up fine, but all three together? <span class="warn">Never</span>` });
+    }
+  }
+
+  // --- 17. The Split Shift — someone with a midday gap ---
+  {
+    for (const n of names) {
+      let foundSplit = false;
+      for (const dk of STATE.days) {
+        const daySlots = STATE.dayMap[dk].slots;
+        const avail = daySlots.map(s => s.available.has(n));
+        // Look for pattern: available → gap of 2+ slots → available again
+        let state = 'before', gapLen = 0;
+        for (let i = 0; i < avail.length; i++) {
+          if (state === 'before' && avail[i]) state = 'in';
+          else if (state === 'in' && !avail[i]) { state = 'gap'; gapLen = 1; }
+          else if (state === 'gap' && !avail[i]) gapLen++;
+          else if (state === 'gap' && avail[i] && gapLen >= 2) { foundSplit = true; break; }
+          else if (state === 'gap' && avail[i]) state = 'in'; // small blip, reset
+        }
+        if (foundSplit) {
+          const dayName = STATE.dayNames[STATE.days.indexOf(dk)];
+          insights.push({ icon: '<i class="fa-solid fa-scissors"></i>', text: `<strong>${shortName(n)}</strong> has a split shift on ${dayName} — available, disappears, then comes back` });
+          break;
+        }
+      }
+      if (foundSplit) break; // Only show one
+    }
+  }
+
+  // --- 18. The Core Crew — a subset always available together ---
+  if (N >= 4 && N <= 12) {
+    // Find the largest group of 3+ people where every slot that ANY of them is free, ALL of them are free
+    // Simpler approach: find the group with most shared slots (all simultaneously free)
+    let bestCrew = null, bestCrewSlots = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        for (let k = j + 1; k < N; k++) {
+          let shared = 0;
+          for (const s of slots) {
+            if (s.available.has(names[i]) && s.available.has(names[j]) && s.available.has(names[k])) shared++;
+          }
+          if (shared > bestCrewSlots) { bestCrewSlots = shared; bestCrew = [names[i], names[j], names[k]]; }
+        }
+      }
+    }
+    // Only show if the core crew has significantly more overlap than average
+    if (bestCrew && bestCrewSlots >= 16) { // 4+ hours together
+      const crewHrs = (bestCrewSlots * 0.25);
+      insights.push({ icon: '<i class="fa-solid fa-people-group"></i>', text: `<strong>Core crew:</strong> ${bestCrew.map(shortName).join(', ')} are available together for <span class="hl">${crewHrs}h</span> this week — easiest trio to schedule` });
+    }
+  }
+
   return insights;
 }
 
