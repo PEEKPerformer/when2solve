@@ -1051,7 +1051,7 @@ function computeInsights() {
   if (lunchSlots > 0) {
     const lunchPct = Math.round(lunchAvail / (lunchSlots * N) * 100);
     if (lunchPct < 50) {
-      insights.push({ icon: '🍽️', text: `Only <span class="warn">${lunchPct}%</span> availability over the lunch hour (12–1 PM) — most of the team blocks it` });
+      insights.push({ icon: '🍽️', text: `Only <span class="warn">${lunchPct}%</span> of the team is free over lunch (12–1 PM) — slim pickings for a midday meeting` });
     }
   }
 
