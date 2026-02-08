@@ -165,7 +165,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .seg-btn{font-family:'JetBrains Mono',monospace;font-size:.75rem;padding:.35rem .65rem;color:var(--text-muted);cursor:pointer;transition:all .2s;white-space:nowrap;user-select:none;border-radius:5px;text-align:center}
 .seg-btn:hover{color:var(--text-secondary)}
 .seg-btn.active{background:var(--bg-hover);color:var(--text-primary)}
-.topbar-divider{width:1px;height:24px;background:var(--border);margin:0 .2rem}
 @media(max-width:720px){.topbar{flex-direction:column;align-items:stretch;gap:.5rem}.topbar-center{justify-content:center}.topbar-right{justify-content:flex-end}}
 
 .blocked-bar{display:flex;align-items:center;gap:.6rem;padding:.5rem .8rem;margin-bottom:.5rem;flex-wrap:wrap}
@@ -470,15 +469,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <div class="seg-btn" data-val="8">2h</div>
         </div>
       </div>
-      <div class="topbar-divider"></div>
-      <div class="seg-group">
-        <span class="ctrl-label">Meetings</span>
-        <div class="seg-btns" id="ctrlMeetings">
-          <div class="seg-btn active" data-val="0">Auto</div>
-          <div class="seg-btn" data-val="1">1</div>
-          <div class="seg-btn" data-val="2">2</div>
-        </div>
-      </div>
     </div>
     <div class="topbar-right">
       <div class="topbar-badge" id="participantBadge"></div>
@@ -716,7 +706,6 @@ function windowsOverlap(a, b) {
 
 function solve() {
   const duration = parseInt(document.getElementById('ctrlDuration').querySelector('.seg-btn.active').dataset.val);
-  const meetingsPref = parseInt(document.getElementById('ctrlMeetings').querySelector('.seg-btn.active').dataset.val);
   const required = STATE.required;
   const blocked = STATE.blocked;
   const allNames = new Set(STATE.names);
@@ -789,13 +778,8 @@ function solve() {
   const bestSingle = windows[0];
   const singleCovers = bestSingle && bestSingle.count === STATE.numPeople;
 
-  // Determine meeting count
-  let numMeetings = meetingsPref;
-  if (numMeetings === 0) {
-    numMeetings = singleCovers ? 1 : 2;
-  }
-
-  if (numMeetings === 2 && windows.length >= 2) {
+  // Automatically compute pairs when no single meeting covers everyone
+  if (!singleCovers && windows.length >= 2) {
     // Find best pairs
     const topN = Math.min(windows.length, 60); // limit search
     let bestPairs = [];
@@ -832,7 +816,7 @@ function solve() {
   }
 
   // Coverage
-  if (numMeetings === 2 && results.pairs.length > 0) {
+  if (results.pairs.length > 0) {
     results.coverage = results.pairs[0].coverage;
   } else if (results.single.length > 0) {
     results.coverage = results.single[0].count;
@@ -840,8 +824,7 @@ function solve() {
 
   // Generate suggestion if not full coverage
   if (results.coverage < STATE.numPeople) {
-    const bestSol = numMeetings === 2 && results.pairs.length > 0
-      ? results.pairs[0] : null;
+    const bestSol = results.pairs.length > 0 ? results.pairs[0] : null;
     if (bestSol) {
       const missing = bestSol.uncovered;
       if (missing.length > 0 && missing.length <= 2) {
@@ -851,7 +834,7 @@ function solve() {
     }
   }
 
-  results.numMeetings = numMeetings;
+  results.singleCovers = singleCovers;
   results.windows = windows;
   return results;
 }
@@ -1038,16 +1021,13 @@ function renderDecisions() {
   const r = STATE.currentResults;
   if (!r) return;
 
-  const usePairs = r.numMeetings === 2 && r.pairs.length > 0;
   const sortedNames = [...STATE.names].sort((a,b) => getTotalHours(b) - getTotalHours(a));
 
-  // --- Single meeting options ---
+  // --- Single meeting options (always shown) ---
   const singles = r.single.filter(w => !STATE.dismissed.has(w.key));
   if (singles.length > 0) {
-    // Hero — the #1 pick, big and confident
     container.appendChild(renderHero(singles[0], sortedNames));
 
-    // Render all runners into grid, measure actual CSS columns, trim to full rows
     const allRunners = singles.slice(1);
     if (allRunners.length > 0) {
       container.insertAdjacentHTML('beforeend', `<div class="section-head">Alternatives</div>`);
@@ -1056,16 +1036,13 @@ function renderDecisions() {
       allRunners.forEach(win => grid.appendChild(renderSingleCard(win, sortedNames)));
       container.appendChild(grid);
 
-      // Measure real column count from CSS grid
       const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-      // Collect overflow cards (anything beyond one full row)
       const overflow = [];
       while (grid.children.length > cols) {
         overflow.unshift(grid.removeChild(grid.lastChild));
       }
       [...grid.children].forEach((c, i) => { c.style.animationDelay = `${i * 0.06}s`; });
 
-      // Put overflow behind "show more"
       if (overflow.length > 0) {
         const moreId = 'moreSingles';
         container.insertAdjacentHTML('beforeend',
@@ -1079,8 +1056,8 @@ function renderDecisions() {
     }
   }
 
-  // --- Full coverage plans (pairs) ---
-  if (usePairs) {
+  // --- Full coverage plans (shown automatically when no single covers everyone) ---
+  if (!r.singleCovers && r.pairs.length > 0) {
     const plans = r.pairs.filter(p => !STATE.dismissed.has(p.key));
     if (plans.length > 0) {
       container.insertAdjacentHTML('beforeend', `<div class="section-head">Full Coverage Plans</div>`);
@@ -1117,7 +1094,7 @@ function renderDecisions() {
       `<div class="dismissed-info">${STATE.dismissed.size} dismissed · <a onclick="resetDismissed()">show all</a></div>`);
   }
 
-  if (singles.length === 0 && (!usePairs || r.pairs.filter(p => !STATE.dismissed.has(p.key)).length === 0)) {
+  if (singles.length === 0 && r.pairs.filter(p => !STATE.dismissed.has(p.key)).length === 0) {
     if (STATE.dismissed.size > 0) {
       container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.82rem">All options dismissed.<br><a onclick="resetDismissed()" style="color:var(--accent);cursor:pointer">Show all</a></div>';
     } else {
@@ -1635,8 +1612,7 @@ function drawSolutionOutlines() {
   document.querySelectorAll('.sol-outline').forEach(e => e.remove());
   if (!STATE.currentResults) return;
   const r = STATE.currentResults;
-  const usePairs = r.numMeetings === 2 && r.pairs.length > 0;
-  if (usePairs && r.pairs.length > 0) {
+  if (!r.singleCovers && r.pairs.length > 0) {
     const best = r.pairs.filter(p => !STATE.dismissed.has(p.key))[0];
     if (best) { drawOutline(best.a, 'A'); drawOutline(best.b, 'B'); }
   } else if (r.single.length > 0) {
