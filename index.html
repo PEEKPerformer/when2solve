@@ -107,21 +107,41 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .section-head{font-family:'JetBrains Mono',monospace;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:.8rem;margin-top:1.2rem;display:flex;align-items:center;gap:.6rem}
 .section-head::after{content:'';flex:1;height:1px;background:var(--border)}
 
-.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.8rem;margin-bottom:1rem}
-.option-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem;position:relative;transition:all .3s;animation:fadeUp .5s ease-out both}
+/* Hero recommendation */
+.hero-card{background:var(--bg-card);border:1px solid rgba(34,211,238,0.3);border-radius:14px;padding:1.6rem;margin-bottom:1rem;position:relative;animation:fadeUp .5s ease-out both;box-shadow:0 0 30px rgba(34,211,238,0.06)}
+.hero-label{font-family:'JetBrains Mono',monospace;font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.5rem;font-weight:600}
+.hero-main{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.2rem;flex-wrap:wrap}
+.hero-day{font-size:1.5rem;font-weight:700;color:var(--text-primary)}
+.hero-time{font-family:'JetBrains Mono',monospace;font-size:1.05rem;color:var(--text-secondary)}
+.hero-dots{display:flex;gap:6px;margin:.6rem 0 .4rem;flex-wrap:wrap}
+.hero-dots .att-dot{width:14px;height:14px}
+.hero-count{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--text-secondary);margin-bottom:.15rem}
+.hero-missing{font-size:.82rem;color:var(--text-muted);font-style:italic;line-height:1.4}
+.hero-missing.card-all{color:var(--accent);font-style:normal;font-weight:500}
+.hero-dismiss{position:absolute;top:1rem;right:1rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:.72rem;padding:.3rem .8rem;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.hero-dismiss:hover{color:#ef4444;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.04)}
+
+/* Runner-up cards */
+.runners-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem;margin-bottom:.8rem}
+.option-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.1rem;position:relative;transition:all .3s;animation:fadeUp .5s ease-out both}
 .option-card:hover{border-color:var(--border-light);transform:translateY(-2px)}
-.option-card.best{border-color:rgba(34,211,238,0.3);box-shadow:0 0 24px rgba(34,211,238,0.06)}
-.card-badge{font-family:'JetBrains Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.4rem}
-.card-day{font-size:1.15rem;font-weight:600;color:var(--text-primary);margin-bottom:.15rem}
-.card-time{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-secondary);margin-bottom:.6rem}
+.card-day{font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:.1rem}
+.card-time{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-secondary);margin-bottom:.5rem}
 .att-dots{display:flex;gap:5px;margin-bottom:.4rem;flex-wrap:wrap}
 .att-dot{width:12px;height:12px;border-radius:50%;transition:all .2s}
 .att-dot.absent{background:transparent!important;opacity:.3}
-.card-count{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-secondary);margin-bottom:.25rem}
-.card-missing{font-size:.75rem;color:var(--text-muted);font-style:italic;margin-bottom:.7rem;min-height:1.2em;line-height:1.4}
+.card-count{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-secondary);margin-bottom:.2rem}
+.card-missing{font-size:.72rem;color:var(--text-muted);font-style:italic;margin-bottom:.5rem;min-height:1em;line-height:1.4}
 .card-missing.card-all{color:var(--accent);font-style:normal;font-weight:500}
-.card-dismiss{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:.72rem;padding:.35rem .7rem;cursor:pointer;transition:all .2s;width:100%;font-family:'DM Sans',sans-serif}
+.card-dismiss{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:.68rem;padding:.3rem .6rem;cursor:pointer;transition:all .2s;width:100%;font-family:'DM Sans',sans-serif}
 .card-dismiss:hover{color:#ef4444;border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.04)}
+
+/* Show more toggle */
+.show-more{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted);cursor:pointer;padding:.4rem 0;transition:color .2s;user-select:none;margin-bottom:.8rem}
+.show-more:hover{color:var(--text-secondary)}
+.more-options{display:none;margin-bottom:.8rem}
+.more-options.open{display:block}
+.more-options.open.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem}
 
 /*── Plan cards ──*/
 .plan-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.4rem;position:relative;margin-bottom:.8rem;animation:fadeUp .5s ease-out both}
@@ -546,7 +566,7 @@ function solve() {
       dedupedSingles.push(w);
     }
   }
-  results.single = dedupedSingles.slice(0, 12);
+  results.single = dedupedSingles.slice(0, 8);
 
   // Check if single meeting covers everyone
   const bestSingle = windows[0];
@@ -591,7 +611,7 @@ function solve() {
       );
       if (!similar) dedupedPairs.push(p);
     }
-    results.pairs = dedupedPairs.slice(0, 10);
+    results.pairs = dedupedPairs.slice(0, 6);
   }
 
   // Coverage
@@ -748,6 +768,53 @@ function updateSolutions() {
   if (STATE.heatmapOpen) drawSolutionOutlines();
 }
 
+function makeDots(win, sortedNames, size) {
+  let html = '';
+  for (const name of sortedNames) {
+    const here = win.attendees.has(name);
+    const c = pcolor(name);
+    html += here
+      ? `<div class="att-dot present" style="background:${c}" title="${shortName(name)}"></div>`
+      : `<div class="att-dot absent" style="box-shadow:inset 0 0 0 1.5px ${c}" title="${shortName(name)} — absent"></div>`;
+  }
+  return html;
+}
+
+function renderSingleCard(win, sortedNames) {
+  const miss = [...win.missing].map(shortName).join(', ');
+  const card = document.createElement('div');
+  card.className = 'option-card';
+  card.innerHTML = `
+    <div class="card-day">${win.dayName}</div>
+    <div class="card-time">${formatTime(win.startH,win.startM)} – ${formatTime(win.endH,win.endM)}</div>
+    <div class="att-dots">${makeDots(win, sortedNames)}</div>
+    <div class="card-count">${win.count} of ${STATE.numPeople}</div>
+    ${win.missing.size > 0
+      ? `<div class="card-missing">without ${miss}</div>`
+      : '<div class="card-missing card-all">everyone</div>'}
+    <button class="card-dismiss" onclick="dismissOption('${win.key}')">Not this one</button>`;
+  return card;
+}
+
+function renderHero(win, sortedNames) {
+  const miss = [...win.missing].map(shortName).join(', ');
+  const hero = document.createElement('div');
+  hero.className = 'hero-card';
+  hero.innerHTML = `
+    <div class="hero-label">Recommended</div>
+    <div class="hero-main">
+      <div class="hero-day">${win.dayName}</div>
+      <div class="hero-time">${formatTime(win.startH,win.startM)} – ${formatTime(win.endH,win.endM)}</div>
+    </div>
+    <div class="hero-dots">${makeDots(win, sortedNames)}</div>
+    <div class="hero-count">${win.count} of ${STATE.numPeople}</div>
+    ${win.missing.size > 0
+      ? `<div class="hero-missing">without ${miss}</div>`
+      : '<div class="hero-missing card-all">everyone</div>'}
+    <button class="hero-dismiss" onclick="dismissOption('${win.key}')">Not this one</button>`;
+  return hero;
+}
+
 function renderDecisions() {
   const container = document.getElementById('decisions');
   container.innerHTML = '';
@@ -760,37 +827,39 @@ function renderDecisions() {
   // --- Single meeting options ---
   const singles = r.single.filter(w => !STATE.dismissed.has(w.key));
   if (singles.length > 0) {
-    const best = singles[0];
-    const label = best.count === STATE.numPeople ? 'Best Times — Everyone Available' : 'Best Times';
-    container.insertAdjacentHTML('beforeend', `<div class="section-head">${label}</div>`);
-    const grid = document.createElement('div');
-    grid.className = 'options-grid';
-    singles.forEach((win, rank) => {
-      const card = document.createElement('div');
-      card.className = 'option-card' + (rank === 0 ? ' best' : '');
-      card.style.animationDelay = `${rank * 0.06}s`;
-      let dots = '';
-      for (const name of sortedNames) {
-        const here = win.attendees.has(name);
-        const c = pcolor(name);
-        dots += here
-          ? `<div class="att-dot present" style="background:${c}" title="${shortName(name)}"></div>`
-          : `<div class="att-dot absent" style="box-shadow:inset 0 0 0 1.5px ${c}" title="${shortName(name)} — absent"></div>`;
-      }
-      const miss = [...win.missing].map(shortName).join(', ');
-      card.innerHTML = `
-        ${rank === 0 ? '<div class="card-badge">Top pick</div>' : ''}
-        <div class="card-day">${win.dayName}</div>
-        <div class="card-time">${formatTime(win.startH,win.startM)} – ${formatTime(win.endH,win.endM)}</div>
-        <div class="att-dots">${dots}</div>
-        <div class="card-count">${win.count} of ${STATE.numPeople}</div>
-        ${win.missing.size > 0
-          ? `<div class="card-missing">without ${miss}</div>`
-          : '<div class="card-missing card-all">everyone</div>'}
-        <button class="card-dismiss" onclick="dismissOption('${win.key}')">Not this one</button>`;
-      grid.appendChild(card);
-    });
-    container.appendChild(grid);
+    // Hero — the #1 pick, big and confident
+    container.appendChild(renderHero(singles[0], sortedNames));
+
+    // Runner-ups — 2-3 alternatives
+    const runners = singles.slice(1, 4);
+    if (runners.length > 0) {
+      container.insertAdjacentHTML('beforeend', `<div class="section-head">Alternatives</div>`);
+      const grid = document.createElement('div');
+      grid.className = 'runners-grid';
+      runners.forEach((win, i) => {
+        const card = renderSingleCard(win, sortedNames);
+        card.style.animationDelay = `${i * 0.06}s`;
+        grid.appendChild(card);
+      });
+      container.appendChild(grid);
+    }
+
+    // Show more — remaining options behind toggle
+    const rest = singles.slice(4);
+    if (rest.length > 0) {
+      const moreId = 'moreSingles';
+      container.insertAdjacentHTML('beforeend',
+        `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${rest.length} more option${rest.length > 1 ? 's' : ''}</div>`);
+      const moreGrid = document.createElement('div');
+      moreGrid.className = 'more-options more-grid';
+      moreGrid.id = moreId;
+      rest.forEach((win, i) => {
+        const card = renderSingleCard(win, sortedNames);
+        card.style.animationDelay = `${i * 0.05}s`;
+        moreGrid.appendChild(card);
+      });
+      container.appendChild(moreGrid);
+    }
   }
 
   // --- Full coverage plans (pairs) ---
@@ -798,57 +867,27 @@ function renderDecisions() {
     const plans = r.pairs.filter(p => !STATE.dismissed.has(p.key));
     if (plans.length > 0) {
       container.insertAdjacentHTML('beforeend', `<div class="section-head">Full Coverage Plans</div>`);
-      plans.forEach((plan, rank) => {
-        const card = document.createElement('div');
-        card.className = 'plan-card' + (rank === 0 ? ' best' : '');
-        card.style.animationDelay = `${rank * 0.08}s`;
 
-        function dots(win) {
-          let h = '';
-          for (const name of sortedNames) {
-            const here = win.attendees.has(name);
-            const c = pcolor(name);
-            h += here
-              ? `<div class="att-dot present" style="background:${c}" title="${shortName(name)}"></div>`
-              : `<div class="att-dot absent" style="box-shadow:inset 0 0 0 1.5px ${c}" title="${shortName(name)}"></div>`;
-          }
-          return h;
-        }
+      // Show top plan, then 1-2 runner-up plans, rest behind toggle
+      const visiblePlans = plans.slice(0, 3);
+      const restPlans = plans.slice(3);
 
-        const onlyA = [...plan.a.attendees].filter(n => !plan.b.attendees.has(n));
-        const onlyB = [...plan.b.attendees].filter(n => !plan.a.attendees.has(n));
-        const both = [...plan.a.attendees].filter(n => plan.b.attendees.has(n));
-        let bd = '<div class="plan-breakdown">';
-        if (both.length) bd += `<span>${both.map(shortName).join(', ')}</span> at both<br>`;
-        if (onlyA.length) bd += `<span>${onlyA.map(shortName).join(', ')}</span> only ${plan.a.dayName}<br>`;
-        if (onlyB.length) bd += `<span>${onlyB.map(shortName).join(', ')}</span> only ${plan.b.dayName}`;
-        if (plan.uncovered.length) bd += `<br>Missing: ${plan.uncovered.map(shortName).join(', ')}`;
-        bd += '</div>';
-
-        card.innerHTML = `
-          <div class="plan-header">
-            <div class="plan-label">${rank === 0 ? 'Best plan' : 'Plan ' + String.fromCharCode(65 + rank)}</div>
-            <div class="plan-coverage-badge">${plan.coverage}/${STATE.numPeople} covered</div>
-          </div>
-          <button class="plan-dismiss" onclick="dismissOption('${plan.key}')" title="Dismiss">&times;</button>
-          <div class="plan-meetings">
-            <div class="plan-meeting">
-              <div class="card-day">${plan.a.dayName}</div>
-              <div class="card-time">${formatTime(plan.a.startH,plan.a.startM)} – ${formatTime(plan.a.endH,plan.a.endM)}</div>
-              <div class="att-dots">${dots(plan.a)}</div>
-              <div class="card-count">${plan.a.count}/${STATE.numPeople}</div>
-            </div>
-            <div class="plan-connector">+</div>
-            <div class="plan-meeting">
-              <div class="card-day">${plan.b.dayName}</div>
-              <div class="card-time">${formatTime(plan.b.startH,plan.b.startM)} – ${formatTime(plan.b.endH,plan.b.endM)}</div>
-              <div class="att-dots">${dots(plan.b)}</div>
-              <div class="card-count">${plan.b.count}/${STATE.numPeople}</div>
-            </div>
-          </div>
-          ${bd}`;
-        container.appendChild(card);
+      visiblePlans.forEach((plan, rank) => {
+        container.appendChild(renderPlanCard(plan, rank, sortedNames));
       });
+
+      if (restPlans.length > 0) {
+        const moreId = 'morePlans';
+        container.insertAdjacentHTML('beforeend',
+          `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${restPlans.length} more plan${restPlans.length > 1 ? 's' : ''}</div>`);
+        const moreDiv = document.createElement('div');
+        moreDiv.className = 'more-options';
+        moreDiv.id = moreId;
+        restPlans.forEach((plan, i) => {
+          moreDiv.appendChild(renderPlanCard(plan, i + 3, sortedNames));
+        });
+        container.appendChild(moreDiv);
+      }
     }
   }
 
@@ -863,11 +902,61 @@ function renderDecisions() {
 
   if (singles.length === 0 && (!usePairs || r.pairs.filter(p => !STATE.dismissed.has(p.key)).length === 0)) {
     if (STATE.dismissed.size > 0) {
-      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.75rem">All options dismissed.<br><a onclick="resetDismissed()" style="color:var(--accent);cursor:pointer">Show all</a></div>';
+      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.82rem">All options dismissed.<br><a onclick="resetDismissed()" style="color:var(--accent);cursor:pointer">Show all</a></div>';
     } else {
-      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.75rem">No valid windows found. Try adjusting constraints.</div>';
+      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:.82rem">No valid windows found. Try adjusting constraints.</div>';
     }
   }
+}
+
+function renderPlanCard(plan, rank, sortedNames) {
+  const card = document.createElement('div');
+  card.className = 'plan-card' + (rank === 0 ? ' best' : '');
+  card.style.animationDelay = `${rank * 0.08}s`;
+
+  const onlyA = [...plan.a.attendees].filter(n => !plan.b.attendees.has(n));
+  const onlyB = [...plan.b.attendees].filter(n => !plan.a.attendees.has(n));
+  const both = [...plan.a.attendees].filter(n => plan.b.attendees.has(n));
+  let bd = '<div class="plan-breakdown">';
+  if (both.length) bd += `<span>${both.map(shortName).join(', ')}</span> at both<br>`;
+  if (onlyA.length) bd += `<span>${onlyA.map(shortName).join(', ')}</span> only ${plan.a.dayName}<br>`;
+  if (onlyB.length) bd += `<span>${onlyB.map(shortName).join(', ')}</span> only ${plan.b.dayName}`;
+  if (plan.uncovered.length) bd += `<br>Missing: ${plan.uncovered.map(shortName).join(', ')}`;
+  bd += '</div>';
+
+  card.innerHTML = `
+    <div class="plan-header">
+      <div class="plan-label">${rank === 0 ? 'Best plan' : 'Plan ' + String.fromCharCode(65 + rank)}</div>
+      <div class="plan-coverage-badge">${plan.coverage}/${STATE.numPeople} covered</div>
+    </div>
+    <button class="plan-dismiss" onclick="dismissOption('${plan.key}')" title="Dismiss">&times;</button>
+    <div class="plan-meetings">
+      <div class="plan-meeting">
+        <div class="card-day">${plan.a.dayName}</div>
+        <div class="card-time">${formatTime(plan.a.startH,plan.a.startM)} – ${formatTime(plan.a.endH,plan.a.endM)}</div>
+        <div class="att-dots">${makeDots(plan.a, sortedNames)}</div>
+        <div class="card-count">${plan.a.count}/${STATE.numPeople}</div>
+      </div>
+      <div class="plan-connector">+</div>
+      <div class="plan-meeting">
+        <div class="card-day">${plan.b.dayName}</div>
+        <div class="card-time">${formatTime(plan.b.startH,plan.b.startM)} – ${formatTime(plan.b.endH,plan.b.endM)}</div>
+        <div class="att-dots">${makeDots(plan.b, sortedNames)}</div>
+        <div class="card-count">${plan.b.count}/${STATE.numPeople}</div>
+      </div>
+    </div>
+    ${bd}`;
+  return card;
+}
+
+function toggleMore(id, el) {
+  const div = document.getElementById(id);
+  if (!div) return;
+  const open = div.classList.toggle('open');
+  const n = div.children.length;
+  el.innerHTML = open
+    ? '&#9662; Hide'
+    : `&#9656; ${n} more option${n > 1 ? 's' : ''}`;
 }
 
 function renderInsights(container) {
