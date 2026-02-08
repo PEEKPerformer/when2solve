@@ -54,6 +54,25 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .cta-secondary{display:inline-flex;align-items:center;gap:.4rem;font-size:.88rem;color:var(--text-muted);text-decoration:none;transition:color .2s}
 .cta-secondary:hover{color:var(--text-secondary)}
 .cta-secondary i{font-size:.7rem}
+.cta-secondary-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;background:transparent;border:1px solid var(--border-light);border-radius:8px;color:var(--text-secondary);font-size:.88rem;font-weight:500;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.cta-secondary-btn:hover{border-color:var(--text-muted);color:var(--text-primary);background:rgba(255,255,255,0.02)}
+
+/*── URL Input ──*/
+.url-input-group{margin-bottom:1.5rem;max-width:460px}
+.url-input-wrap{display:flex;align-items:center;background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:.15rem .15rem .15rem .8rem;transition:border-color .2s,box-shadow .2s}
+.url-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 20px rgba(34,211,238,0.1)}
+.url-input-icon{color:var(--text-muted);font-size:.8rem;flex-shrink:0}
+.url-input{flex:1;background:none;border:none;outline:none;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:.6rem .6rem;min-width:0}
+.url-input::placeholder{color:var(--text-muted);opacity:.6}
+.url-go{flex-shrink:0;width:36px;height:36px;border-radius:8px;border:none;background:var(--accent);color:var(--bg-deep);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .15s}
+.url-go:hover{background:#06b6d4;transform:scale(1.05)}
+.url-go:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.url-go.loading{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.url-status{font-size:.75rem;margin-top:.4rem;min-height:1.1em;font-family:'JetBrains Mono',monospace}
+.url-status.error{color:#ef4444}
+.url-status.loading{color:var(--text-muted)}
+.url-status.success{color:var(--accent)}
 
 /*── Hero Visualization ──*/
 .hero-viz{position:relative;animation:fadeUp .8s ease-out .3s both}
@@ -335,10 +354,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <span class="hero-line hero-line--dim">When2Meet finds times.</span>
         <span class="hero-line hero-line--bright">We find <em>answers</em>.</span>
       </h1>
-      <p class="hero-sub">Drop in your When2Meet data and get instant meeting recommendations with constraints, multi-meeting coverage, and scheduling insights.</p>
+      <p class="hero-sub">Paste your When2Meet link and get instant meeting recommendations with constraints, multi-meeting coverage, and scheduling insights.</p>
+      <div class="url-input-group">
+        <div class="url-input-wrap">
+          <i class="fa-solid fa-link url-input-icon"></i>
+          <input type="url" class="url-input" id="w2mUrl" placeholder="https://when2meet.com/?12345-XXXXX" spellcheck="false" autocomplete="off">
+          <button class="url-go" id="urlGo" onclick="fetchFromUrl()"><i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div class="url-status" id="urlStatus"></div>
+      </div>
       <div class="hero-actions">
-        <button class="cta-primary" onclick="loadDemo()"><i class="fa-solid fa-play"></i> See it in action</button>
-        <a href="#setup" class="cta-secondary">Set up bookmarklet <i class="fa-solid fa-arrow-down"></i></a>
+        <button class="cta-secondary-btn" onclick="loadDemo()"><i class="fa-solid fa-play"></i> Try with demo data</button>
+        <a href="#setup" class="cta-secondary">Or use the bookmarklet <i class="fa-solid fa-arrow-down"></i></a>
       </div>
     </div>
 
@@ -592,6 +619,64 @@ document.addEventListener('mousemove', (e) => {
     glow.style.setProperty('--mx', e.clientX + 'px');
     glow.style.setProperty('--my', e.clientY + 'px');
   }
+});
+
+/*═══════════════════════════════════════════════════════════════
+  URL FETCH (via Cloudflare Worker)
+═══════════════════════════════════════════════════════════════*/
+const WORKER_URL = 'https://when2solve-api.bfer.workers.dev';
+
+function fetchFromUrl() {
+  const input = document.getElementById('w2mUrl');
+  const status = document.getElementById('urlStatus');
+  const btn = document.getElementById('urlGo');
+  const url = input.value.trim();
+
+  if (!url) { input.focus(); return; }
+  if (!/when2meet\.com\/?\?\d+-\w+/i.test(url)) {
+    status.className = 'url-status error';
+    status.textContent = 'Not a When2Meet link. Expected: when2meet.com/?12345-XXXXX';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  status.className = 'url-status loading';
+  status.textContent = 'Fetching availability data...';
+
+  fetch(`${WORKER_URL}/?url=${encodeURIComponent(url)}`)
+    .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    .then(({ ok, data }) => {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      if (!ok || data.error) {
+        status.className = 'url-status error';
+        status.textContent = data.error || 'Unknown error';
+        return;
+      }
+      if (!data.n || data.n.length === 0) {
+        status.className = 'url-status error';
+        status.textContent = 'No participants found. Has anyone filled in availability yet?';
+        return;
+      }
+      status.className = 'url-status success';
+      status.textContent = `Found ${data.n.length} participants. Loading...`;
+      // Encode and launch via hash (same path as bookmarklet)
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      location.hash = encoded;
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      status.className = 'url-status error';
+      status.textContent = 'Network error. Check your connection and try again.';
+    });
+}
+
+// Allow Enter key in URL input
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('w2mUrl');
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') fetchFromUrl(); });
 });
 
 /*═══════════════════════════════════════════════════════════════
