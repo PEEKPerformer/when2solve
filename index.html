@@ -200,14 +200,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .sol-dismissed-info a:hover{text-decoration:underline}
 .sol-empty{padding:1.2rem .8rem;text-align:center;font-size:.72rem;color:var(--text-muted);line-height:1.6}
 
-/*── Analytics: Time Offered ──*/
-.analytics-row{display:flex;align-items:center;gap:6px;padding:3px 0}
-.analytics-name{font-size:.68rem;font-weight:500;width:54px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
-.analytics-bar-bg{flex:1;height:14px;background:rgba(255,255,255,0.03);border-radius:3px;overflow:hidden;position:relative}
-.analytics-bar-fill{height:100%;border-radius:3px;transition:width .6s ease-out}
-.analytics-hours{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--text-muted);width:26px;flex-shrink:0}
-.analytics-avg{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--text-muted);opacity:.35;z-index:2;pointer-events:none}
-.analytics-avg-label{position:absolute;top:-12px;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.45rem;color:var(--text-muted);white-space:nowrap}
 .analytics-stats{text-align:center;margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--text-muted);letter-spacing:.02em}
 </style>
 </head>
@@ -320,10 +312,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       <div class="panel">
         <div class="panel-title">Recommended</div>
         <div id="solutions"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-title">Time Offered</div>
-        <div id="analytics"></div>
       </div>
     </div>
   </div>
@@ -477,6 +465,15 @@ function shortName(name) {
 /*═══════════════════════════════════════════════════════════════
   SOLVER
 ═══════════════════════════════════════════════════════════════*/
+function windowsOverlap(a, b) {
+  if (a.dayKey !== b.dayKey) return false;
+  const aS = a.startH * 60 + a.startM;
+  const aE = a.endH * 60 + a.endM;
+  const bS = b.startH * 60 + b.startM;
+  const bE = b.endH * 60 + b.endM;
+  return aS < bE && bS < aE;
+}
+
 function solve() {
   const duration = parseInt(document.getElementById('ctrlDuration').value);
   const meetingsPref = parseInt(document.getElementById('ctrlMeetings').value);
@@ -539,8 +536,15 @@ function solve() {
 
   const results = { single: [], pairs: [], coverage: 0, suggestion: null };
 
-  // Single best — return more options for browsing
-  results.single = windows.slice(0, 12);
+  // Deduplicate: only keep the best window per non-overlapping time block
+  // This prevents "Not this one" from showing 15-min shifts of the same slot
+  const dedupedSingles = [];
+  for (const w of windows) {
+    if (!dedupedSingles.some(d => windowsOverlap(d, w))) {
+      dedupedSingles.push(w);
+    }
+  }
+  results.single = dedupedSingles.slice(0, 12);
 
   // Check if single meeting covers everyone
   const bestSingle = windows[0];
@@ -576,7 +580,16 @@ function solve() {
       if (x.diffDay !== y.diffDay) return x.diffDay ? -1 : 1;
       return y.score - x.score;
     });
-    results.pairs = bestPairs.slice(0, 10);
+    // Deduplicate pairs: skip if both meetings overlap pairwise with an already-shown pair
+    const dedupedPairs = [];
+    for (const p of bestPairs) {
+      const similar = dedupedPairs.some(d =>
+        (windowsOverlap(d.a, p.a) && windowsOverlap(d.b, p.b)) ||
+        (windowsOverlap(d.a, p.b) && windowsOverlap(d.b, p.a))
+      );
+      if (!similar) dedupedPairs.push(p);
+    }
+    results.pairs = dedupedPairs.slice(0, 10);
   }
 
   // Coverage
@@ -714,6 +727,15 @@ function renderPeople() {
     `;
     list.appendChild(row);
   });
+
+  // Stats line
+  const allHours = sorted.map(n => getTotalHours(n));
+  const avgH = allHours.reduce((a,b) => a+b, 0) / allHours.length;
+  const minH = Math.min(...allHours);
+  const statsEl = document.createElement('div');
+  statsEl.className = 'analytics-stats';
+  statsEl.textContent = `avg ${avgH.toFixed(0)}h · range ${minH.toFixed(0)}–${maxH.toFixed(0)}h`;
+  list.appendChild(statsEl);
 }
 
 function getTotalHours(name) {
@@ -865,37 +887,6 @@ function resetDismissed() {
   STATE.dismissed.clear();
   STATE.solIdx = 0;
   renderSolutions();
-}
-
-function renderAnalytics() {
-  const el = document.getElementById('analytics');
-  if (!el) return;
-
-  const sorted = [...STATE.names].sort((a,b) => getTotalHours(b) - getTotalHours(a));
-  const hours = sorted.map(n => getTotalHours(n));
-  const maxH = Math.max(...hours);
-  const avgH = hours.reduce((a,b) => a+b, 0) / hours.length;
-  const minH = Math.min(...hours);
-
-  let html = '<div style="position:relative">';
-  sorted.forEach((name, i) => {
-    const h = hours[i];
-    const pct = maxH > 0 ? (h / maxH) * 100 : 0;
-    html += `<div class="analytics-row">
-      <div class="analytics-name" style="color:${pcolor(name)}">${shortName(name)}</div>
-      <div class="analytics-bar-bg">
-        <div class="analytics-bar-fill" style="width:${pct}%;background:${pcolor(name)};opacity:.7"></div>
-      </div>
-      <div class="analytics-hours">${h.toFixed(0)}h</div>
-    </div>`;
-  });
-
-  // Average reference line
-  const avgPct = maxH > 0 ? (avgH / maxH) * 100 : 0;
-  html += '</div>';
-  html += `<div class="analytics-stats">avg ${avgH.toFixed(0)}h · range ${minH.toFixed(0)}–${maxH.toFixed(0)}h</div>`;
-
-  el.innerHTML = html;
 }
 
 function drawOutline(win, label) {
@@ -1110,7 +1101,6 @@ function launchSolver(raw) {
   renderGrid();
   renderLegend();
   renderPeople();
-  renderAnalytics();
   updateSolutions();
 }
 
