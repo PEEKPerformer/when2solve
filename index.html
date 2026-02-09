@@ -242,6 +242,22 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .insight-item .warn{color:#fbbf24}
 .insight-item .soft{color:var(--text-muted);font-size:.75rem}
 
+/*── Scenario Explorer ──*/
+.scenario-panel{background:var(--bg-card);border:2px dashed rgba(34,211,238,0.25);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;animation:fadeUp .4s ease both}
+.scenario-summary{display:flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none;padding:.3rem 0;font-size:.85rem;color:var(--text-secondary);transition:color .2s}
+.scenario-summary:hover{color:var(--text-primary)}
+.scenario-summary .chev{transition:transform .25s;font-size:.65rem;color:var(--text-muted)}
+.scenario-summary .chev.open{transform:rotate(90deg)}
+.scenario-body{display:none;padding-top:.6rem}
+.scenario-body.open{display:block}
+.scenario-card{padding:.6rem .8rem;margin:.45rem 0;border-left:2px dashed rgba(34,211,238,0.3);border-radius:0 8px 8px 0;background:rgba(34,211,238,0.03);font-size:.82rem;color:var(--text-secondary);line-height:1.55}
+.scenario-card strong{color:var(--text-primary);font-weight:600}
+.scenario-card .hl{color:#22d3ee}
+.scenario-card .warn{color:#fbbf24}
+.scenario-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(34,211,238,0.7);background:rgba(34,211,238,0.08);padding:1px 6px;border-radius:3px;margin-right:.5rem;vertical-align:middle}
+.scenario-icon{flex-shrink:0;width:1.2em;display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.85rem;margin-right:.4rem}
+.scenario-dots .att-dot{opacity:.55;filter:saturate(0.5)}
+
 /*── Heatmap (collapsible) ──*/
 .heatmap-toggle{display:flex;align-items:center;gap:.5rem;padding:.6rem 0;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-muted);cursor:pointer;transition:color .2s;user-select:none}
 .heatmap-toggle:hover{color:var(--text-secondary)}
@@ -309,7 +325,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 /* Suppress animations on re-renders to prevent flickering */
-.no-anim .hero-card,.no-anim .plan-card,.no-anim .option-card,.no-anim .insight-item,.no-anim .insights-panel{animation:none!important;opacity:1!important;transform:none!important}
+.no-anim .hero-card,.no-anim .plan-card,.no-anim .option-card,.no-anim .insight-item,.no-anim .insights-panel,.no-anim .scenario-panel{animation:none!important;opacity:1!important;transform:none!important}
 
 </style>
 </head>
@@ -713,8 +729,8 @@ function windowsOverlap(a, b) {
   return aS < bE && bS < aE;
 }
 
-function solve() {
-  const duration = parseInt(document.getElementById('ctrlDuration').querySelector('.seg-btn.active').dataset.val);
+function solve(overrideDuration) {
+  const duration = overrideDuration || parseInt(document.getElementById('ctrlDuration').querySelector('.seg-btn.active').dataset.val);
   const required = STATE.required;
   const blocked = STATE.blocked;
   const allNames = new Set(STATE.names);
@@ -1070,6 +1086,7 @@ function renderDecisions() {
   const singles = r.single.filter(w => !STATE.dismissed.has(w.key));
   if (singles.length > 0) {
     container.appendChild(renderHero(singles[0], sortedNames));
+    renderScenarios(container, r, isRerender);
 
     const allRunners = singles.slice(1);
     if (allRunners.length > 0) {
@@ -1207,6 +1224,43 @@ function renderInsights(container) {
   insights.forEach(ins => {
     html += `<div class="insight-item"><span class="insight-icon">${ins.icon}</span><span>${ins.text}</span></div>`;
   });
+  panel.innerHTML = html;
+  container.appendChild(panel);
+}
+
+function renderScenarios(container, results, isRerender) {
+  if (!results || results.single.length === 0) return;
+  const bottlenecks = computeBottlenecks(results);
+  if (!bottlenecks) return;
+  const { suggestions, summary } = computeSuggestions(results, bottlenecks);
+  if (suggestions.length === 0) return;
+
+  const panel = document.createElement('div');
+  panel.className = 'scenario-panel';
+
+  const autoExpand = bottlenecks.bestCount / bottlenecks.N < 0.6;
+  const chevClass = autoExpand ? 'chev open' : 'chev';
+  const bodyClass = autoExpand ? 'scenario-body open' : 'scenario-body';
+
+  let headerText = summary || 'What-if scenarios available';
+  let html = `<div class="scenario-summary" onclick="this.querySelector('.chev').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+    <span class="${chevClass}">&#9656;</span>
+    <span class="scenario-badge">WHAT-IF</span>
+    <i class="fa-solid fa-flask" style="color:var(--text-muted);font-size:.8rem"></i>
+    <span>${headerText}</span>
+  </div>`;
+
+  html += `<div class="${bodyClass}">`;
+  html += '<div class="section-head" style="margin-top:0;margin-bottom:.5rem;font-size:.7rem">Scenario Explorer</div>';
+
+  for (const s of suggestions) {
+    html += `<div class="scenario-card">
+      <span class="scenario-icon">${s.icon}</span>
+      <strong>${s.title}:</strong> ${s.text}
+    </div>`;
+  }
+
+  html += '</div>';
   panel.innerHTML = html;
   container.appendChild(panel);
 }
@@ -1923,6 +1977,237 @@ function computeInsights() {
   }
 
   return insights;
+}
+
+/*═══════════════════════════════════════════════════════════════
+  SCENARIO EXPLORER — bottleneck + suggestion engine
+═══════════════════════════════════════════════════════════════*/
+function computeBottlenecks(results) {
+  const names = STATE.names;
+  const N = names.length;
+  if (N === 0 || !results || results.single.length === 0) return null;
+
+  // 3a. Ghost detection — signed up but 0 availability
+  const ghosts = names.filter(n => getTotalHours(n) === 0);
+
+  // 3b. Duplicate detection — whitespace-trim exact match only
+  const seen = {};
+  const duplicates = [];
+  for (const n of names) {
+    const key = n.trim().toLowerCase();
+    if (seen[key]) duplicates.push([seen[key], n]);
+    else seen[key] = n;
+  }
+
+  // 3c. Per-person removal analysis
+  const bestWindow = results.single[0];
+  const bestCount = bestWindow.count;
+  const allWindows = results.windows || results.single;
+  const perPerson = [];
+
+  for (const n of names) {
+    const isGhost = ghosts.includes(n);
+    const inBest = bestWindow.attendees.has(n);
+    let gain = 0;
+    if (!isGhost) {
+      // How many N-1 attendance windows open if this person is dropped?
+      const full = allWindows.filter(w => {
+        const ct = w.attendees.has(n) ? w.count - 1 : w.count;
+        return ct >= N - 1;
+      });
+      const deduped = [];
+      for (const w of full) {
+        if (!deduped.some(d => windowsOverlap(d, w))) deduped.push(w);
+      }
+      gain = deduped.length;
+    }
+    // Count near-misses: windows where this person is the only one missing
+    const nearMisses = allWindows.filter(w => w.count === N - 1 && !w.attendees.has(n));
+    perPerson.push({ name: n, gain, nearMisses: nearMisses.length, isGhost, inBest });
+  }
+
+  // 3d. Slot proximity analysis — for each person missing from best window
+  const slotSuggestions = [];
+  for (const n of [...bestWindow.missing]) {
+    if (ghosts.includes(n)) continue;
+    // Find this person's availability on the best window's day
+    const dayKey = bestWindow.dayKey;
+    const daySlots = STATE.dayMap[dayKey] ? STATE.dayMap[dayKey].slots : [];
+    const personSlots = daySlots.filter(s => s.available.has(n));
+
+    if (personSlots.length === 0) {
+      slotSuggestions.push({ name: n, type: 'no-day' });
+      continue;
+    }
+
+    // Best window time range in minutes
+    const wStart = bestWindow.startH * 60 + bestWindow.startM;
+    const wEnd = bestWindow.endH * 60 + bestWindow.endM;
+
+    // Person's slot edges on this day
+    const pTimes = personSlots.map(s => s.h * 60 + s.m);
+    const pStart = Math.min(...pTimes);
+    const pEnd = Math.max(...pTimes) + 15; // slot end = start + 15min
+
+    // Gap from person's availability to the window
+    let gapMin = Infinity;
+    let direction = '';
+    if (pEnd <= wStart) {
+      gapMin = wStart - pEnd;
+      direction = 'later';
+    } else if (pStart >= wEnd) {
+      gapMin = pStart - wEnd;
+      direction = 'earlier';
+    } else {
+      // Overlaps but not fully: find which edge they need to extend
+      if (pStart > wStart) { gapMin = pStart - wStart; direction = 'earlier'; }
+      else if (pEnd < wEnd) { gapMin = wEnd - pEnd; direction = 'later'; }
+    }
+
+    if (gapMin <= 60) {
+      slotSuggestions.push({ name: n, type: 'extend', gapMin, direction });
+    } else {
+      // Count how many 15-min slots they'd need to add
+      const neededSlots = Math.ceil(gapMin / 15);
+      if (neededSlots <= 3) {
+        slotSuggestions.push({ name: n, type: 'add-slots', neededSlots, direction });
+      } else {
+        slotSuggestions.push({ name: n, type: 'too-far', gapMin });
+      }
+    }
+  }
+
+  return { ghosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N };
+}
+
+function computeSuggestions(results, bottlenecks) {
+  const suggestions = [];
+  if (!bottlenecks) return { suggestions, summary: '' };
+  const { ghosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N } = bottlenecks;
+
+  // Silence rules
+  if (results.singleCovers) return { suggestions, summary: '' };
+  if (bestCount / N >= 0.9) return { suggestions, summary: '' };
+
+  // Priority 0: Ghosts
+  if (ghosts.length > 0) {
+    const ghostNames = ghosts.map(n => n);
+    const verb = ghosts.length === 1 ? 'signed up but didn\u2019t' : 'signed up but didn\u2019t';
+    suggestions.push({
+      type: 'ghost', priority: 0,
+      icon: '<i class="fa-solid fa-ghost"></i>',
+      title: `${ghosts.length} ghost${ghosts.length > 1 ? 's' : ''}`,
+      text: `<strong>${ghostNames.join(', ')}</strong> ${verb} mark any availability — they responded, they just didn\u2019t click slots`
+    });
+  }
+
+  // Priority 1: Duration trade-off
+  const currentDuration = parseInt(document.getElementById('ctrlDuration').querySelector('.seg-btn.active').dataset.val);
+  if (currentDuration >= 4) {
+    const shorterOptions = currentDuration >= 8 ? [currentDuration - 4, currentDuration - 2] : [currentDuration - 2];
+    for (const shorter of shorterOptions) {
+      if (shorter < 2) continue;
+      const altResults = solve(shorter);
+      if (altResults.single.length > 0) {
+        const altBest = altResults.single[0].count;
+        const gainPeople = altBest - bestCount;
+        const threshold = Math.max(2, Math.ceil(N * 0.15));
+        if (gainPeople >= threshold) {
+          const durStr = shorter * 0.25 >= 1 ? `${(shorter * 0.25)}h` : `${shorter * 15}min`;
+          const curStr = currentDuration * 0.25 >= 1 ? `${(currentDuration * 0.25)}h` : `${currentDuration * 15}min`;
+          suggestions.push({
+            type: 'duration', priority: 1,
+            icon: '<i class="fa-solid fa-clock"></i>',
+            title: 'Shorter meeting helps',
+            text: `At <span class="hl">${durStr}</span> instead of ${curStr}, <strong>${gainPeople} more people</strong> can attend (${altBest}/${N})`
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  // Priority 2: Extend availability
+  const extends_ = slotSuggestions.filter(s => s.type === 'extend');
+  for (const ext of extends_.slice(0, 2)) {
+    if (suggestions.length >= 4) break;
+    const durStr = ext.gapMin <= 15 ? '15 min' : `${ext.gapMin} min`;
+    suggestions.push({
+      type: 'extend', priority: 2,
+      icon: '<i class="fa-solid fa-arrows-left-right"></i>',
+      title: `${ext.name} is close`,
+      text: `If <strong>${ext.name}</strong> extended <span class="hl">${durStr} ${ext.direction}</span> on ${bestWindow.dayName}, they\u2019d join the best meeting`
+    });
+  }
+
+  // Priority 3: Add slots
+  const addSlots = slotSuggestions.filter(s => s.type === 'add-slots');
+  for (const add of addSlots.slice(0, 1)) {
+    if (suggestions.length >= 4) break;
+    const slotStr = add.neededSlots === 1 ? '1 slot' : `${add.neededSlots} slots`;
+    suggestions.push({
+      type: 'add-slots', priority: 3,
+      icon: '<i class="fa-solid fa-plus"></i>',
+      title: `${add.name} needs ${slotStr}`,
+      text: `If <strong>${add.name}</strong> added ${slotStr} ${add.direction} on ${bestWindow.dayName}, they\u2019d join the best meeting`
+    });
+  }
+
+  // Priority 4: Flexible — dropping 1 person opens many perfect-attendance windows
+  if (suggestions.length < 4) {
+    const flexible = perPerson
+      .filter(p => !p.isGhost && p.gain >= 2)
+      .sort((a, b) => b.gain - a.gain);
+    if (flexible.length > 0) {
+      const top = flexible[0];
+      suggestions.push({
+        type: 'flexible', priority: 4,
+        icon: '<i class="fa-solid fa-unlock"></i>',
+        title: `${top.name} is a constraint`,
+        text: `Without <strong>${top.name}</strong>\u2019s constraint, <span class="hl">${top.gain} perfect-attendance windows</span> open`
+      });
+    }
+  }
+
+  // Priority 5: Pair cost-benefit
+  if (suggestions.length < 4 && !results.singleCovers && results.pairs.length > 0) {
+    const bestPair = results.pairs[0];
+    const pairCoverage = bestPair.coverage;
+    const singleCoverage = bestCount;
+    const pairGain = pairCoverage - singleCoverage;
+    if (pairGain >= 2) {
+      suggestions.push({
+        type: 'pair', priority: 5,
+        icon: '<i class="fa-solid fa-clone"></i>',
+        title: '2 meetings help',
+        text: `1 meeting: <strong>${singleCoverage}/${N}</strong>. 2 meetings: <strong>${pairCoverage}/${N}</strong>. Second meeting picks up <span class="hl">${pairGain}</span> more`
+      });
+    }
+  }
+
+  // Duplicates — append as a note if present
+  if (duplicates.length > 0 && suggestions.length < 4) {
+    const dupNames = duplicates.map(d => `"${d[0]}" / "${d[1]}"`).join(', ');
+    suggestions.push({
+      type: 'duplicate', priority: 6,
+      icon: '<i class="fa-solid fa-copy"></i>',
+      title: 'Possible duplicates',
+      text: `These names look like the same person: ${dupNames}. If so, results may overcount availability.`
+    });
+  }
+
+  // Summary line for collapsed state
+  let summary = '';
+  if (bestCount < N) {
+    summary = `${bestCount} of ${N} can meet`;
+    if (results.pairs.length > 0) {
+      const pairCov = results.pairs[0].coverage;
+      if (pairCov > bestCount) summary += `. Adding a second meeting brings it to ${pairCov}`;
+    }
+    summary += '.';
+  }
+
+  return { suggestions: suggestions.slice(0, 4), summary };
 }
 
 function renderTeamBar() {
