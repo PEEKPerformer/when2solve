@@ -6,29 +6,74 @@
  * Usage:  GET https://when2solve-api.<you>.workers.dev/?url=https://when2meet.com/?12345-XXXXX
  */
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+const ALLOWED_ORIGINS = [
+  'https://bfer.land',
+  'https://www.bfer.land',
+  'https://peekperformer.github.io',
+  'http://localhost',
+  'http://127.0.0.1',
+];
+
+// In-memory rate limit: max requests per IP per window
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000; // 1 minute
+const ipHits = new Map();
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = ipHits.get(ip);
+  if (!entry || now - entry.start > RATE_WINDOW_MS) {
+    ipHits.set(ip, { start: now, count: 1 });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT;
+}
+
+function corsHeaders(origin) {
+  const allowed = ALLOWED_ORIGINS.some(o => origin && origin.startsWith(o));
+  return {
+    'Access-Control-Allow-Origin': allowed ? origin : ALLOWED_ORIGINS[0],
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
+  };
+}
 
 export default {
   async fetch(request) {
+    const origin = request.headers.get('Origin') || '';
+    const headers = corsHeaders(origin);
+
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { headers });
+    }
+
+    // Referer/Origin check — block requests not from our sites
+    const referer = request.headers.get('Referer') || '';
+    const originAllowed = ALLOWED_ORIGINS.some(o => origin.startsWith(o));
+    const refererAllowed = ALLOWED_ORIGINS.some(o => referer.startsWith(o));
+    if (!originAllowed && !refererAllowed) {
+      return json({ error: 'Unauthorized origin' }, 403, headers);
+    }
+
+    // Rate limit by IP
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      return json({ error: 'Rate limit exceeded. Try again in a minute.' }, 429, headers);
     }
 
     const { searchParams } = new URL(request.url);
     const w2mUrl = searchParams.get('url');
 
     if (!w2mUrl) {
-      return json({ error: 'Missing ?url= parameter' }, 400);
+      return json({ error: 'Missing ?url= parameter' }, 400, headers);
     }
 
     // Validate it's a when2meet URL
     const match = w2mUrl.match(/when2meet\.com\/?\?(\d+-\w+)/i);
     if (!match) {
-      return json({ error: 'Not a valid When2Meet URL' }, 400);
+      return json({ error: 'Not a valid When2Meet URL' }, 400, headers);
     }
 
     try {
@@ -37,19 +82,19 @@ export default {
       });
 
       if (!resp.ok) {
-        return json({ error: `When2Meet returned ${resp.status}` }, 502);
+        return json({ error: `When2Meet returned ${resp.status}` }, 502, headers);
       }
 
       const html = await resp.text();
       const data = parse(html);
 
       if (!data) {
-        return json({ error: 'Could not parse scheduling data from this page' }, 422);
+        return json({ error: 'Could not parse scheduling data from this page' }, 422, headers);
       }
 
-      return json(data, 200);
+      return json(data, 200, headers);
     } catch (e) {
-      return json({ error: 'Failed to fetch When2Meet page: ' + e.message }, 502);
+      return json({ error: 'Failed to fetch When2Meet page: ' + e.message }, 502, headers);
     }
   },
 };
@@ -110,9 +155,9 @@ function parse(html) {
   };
 }
 
-function json(data, status) {
+function json(data, status, headers) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
