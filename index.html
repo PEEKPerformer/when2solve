@@ -1311,14 +1311,14 @@ function renderPlanCard(plan, rank, sortedNames, skipAnim) {
   return card;
 }
 
-function toggleMore(id, el) {
+function toggleMore(id, el, noun = 'option') {
   const div = document.getElementById(id);
   if (!div) return;
   const open = div.classList.toggle('open');
   const n = div.children.length;
   el.innerHTML = open
     ? '&#9662; Hide'
-    : `&#9656; ${n} more option${n > 1 ? 's' : ''}`;
+    : `&#9656; ${n} more ${noun}${n > 1 ? 's' : ''}`;
 }
 
 function renderInsights(container) {
@@ -1327,9 +1327,20 @@ function renderInsights(container) {
   const panel = document.createElement('div');
   panel.className = 'insights-panel';
   let html = '<div class="section-head" style="margin-top:0;margin-bottom:.4rem">Scheduling Insights</div>';
-  insights.forEach(ins => {
+  const visible = insights.slice(0, 4);
+  const overflow = insights.slice(4);
+  visible.forEach(ins => {
     html += `<div class="insight-item"><span class="insight-icon">${ins.icon}</span><span>${ins.text}</span></div>`;
   });
+  if (overflow.length > 0) {
+    const moreId = 'moreInsights';
+    html += `<div class="show-more" onclick="toggleMore('${moreId}', this, 'insight')">&#9656; ${overflow.length} more insight${overflow.length > 1 ? 's' : ''}</div>`;
+    html += `<div class="more-options" id="${moreId}">`;
+    overflow.forEach(ins => {
+      html += `<div class="insight-item"><span class="insight-icon">${ins.icon}</span><span>${ins.text}</span></div>`;
+    });
+    html += '</div>';
+  }
   panel.innerHTML = html;
   container.appendChild(panel);
 }
@@ -1344,7 +1355,7 @@ function renderScenarios(container, results, isRerender) {
   const panel = document.createElement('div');
   panel.className = 'scenario-panel';
 
-  const autoExpand = bottlenecks.bestCount / bottlenecks.N < 0.6;
+  const autoExpand = true;
   const chevClass = autoExpand ? 'chev open' : 'chev';
   const bodyClass = autoExpand ? 'scenario-body open' : 'scenario-body';
 
