@@ -149,6 +149,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /*── Landing Footer ──*/
 .landing-footer{text-align:center;font-size:.82rem;color:var(--text-muted);padding:2rem;border-top:1px solid var(--border)}
 .landing-footer a{color:var(--accent);text-decoration:none}
+.landing-footer .by{color:var(--text-secondary)}
+.topbar-by{font-size:.65rem;color:var(--text-muted);font-weight:300;letter-spacing:.02em;opacity:.7}
 
 /*── Landing Responsive ──*/
 @media(max-width:768px){
@@ -474,7 +476,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   </section>
 
   <footer class="landing-footer">
-    Open source &middot; Zero tracking &middot; <a href="https://github.com/PEEKPerformer/when2solve" target="_blank">View on GitHub</a>
+    Built by <span class="by">Brenden Ferland</span> &middot; Zero tracking &middot; Your data never leaves your browser
   </footer>
 </div>
 
@@ -483,6 +485,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-brand" onclick="goHome()">WHEN2SOLVE</div>
+      <span class="topbar-by">by Brenden Ferland</span>
       <div class="topbar-event" id="eventInfo"></div>
     </div>
     <div class="topbar-center">
