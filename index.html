@@ -74,6 +74,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .url-status.loading{color:var(--text-muted)}
 .url-status.success{color:var(--accent)}
 
+/*── W2M Overlay ──*/
+.w2m-overlay{position:absolute;inset:0;z-index:10;background:#f0f0f0;border-radius:0 0 12px 12px;overflow:hidden;animation:w2mFade .5s ease-out 2s forwards;display:flex;flex-direction:column}
+.w2m-title{background:#339900;color:#fff;font-size:.7rem;font-weight:700;padding:.35rem .7rem;font-family:Arial,sans-serif;letter-spacing:.02em;flex-shrink:0}
+.w2m-grid{display:grid;grid-template-columns:2.5rem repeat(5,1fr);grid-auto-rows:1fr;gap:0;padding:.3rem .4rem;flex:1;min-height:0}
+.w2m-corner{background:transparent}
+.w2m-day{font-size:.48rem;color:#333;font-family:Arial,sans-serif;text-align:center;font-weight:700;padding-bottom:2px}
+.w2m-tl{font-size:.4rem;color:#555;font-family:Arial,sans-serif;text-align:right;padding-right:4px;display:flex;align-items:center;justify-content:flex-end;border-top:1px solid #bbb}
+.w2m-ts{background:transparent}
+.w2m-cell{border:1px solid #ccc;border-radius:0;min-height:0}
+.w2m-0{background:#fff}.w2m-1{background:#d5ecc8}.w2m-2{background:#aad48e}.w2m-3{background:#91c86e}.w2m-4{background:#77bb55}
+.w2m-scan{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.w2m-scan::after{content:'';position:absolute;top:0;width:3px;height:100%;background:linear-gradient(90deg,transparent,rgba(34,211,238,0.6),transparent);box-shadow:0 0 12px rgba(34,211,238,0.4);animation:w2mScan 1.5s ease-in-out .3s forwards}
+@keyframes w2mFade{to{opacity:0;transform:translateY(8px);pointer-events:none}}
+@keyframes w2mScan{from{left:-3px}to{left:100%}}
+
 /*── Hero Visualization ──*/
 .hero-viz{position:relative;animation:fadeUp .8s ease-out .3s both}
 .viz-window{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(34,211,238,0.04)}
@@ -81,14 +96,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .viz-dot{width:10px;height:10px;border-radius:50%}
 .viz-dot--r{background:#ef4444}.viz-dot--y{background:#fbbf24}.viz-dot--g{background:#34d399}
 .viz-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-muted);margin-left:auto;letter-spacing:.05em}
-.viz-body{padding:1rem}
+.viz-body{padding:1rem;position:relative}
 /*-- Mini team chips --*/
 .viz-team{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.7rem}
 .viz-team-chip{font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:3px 8px;border-radius:12px;border:1px solid var(--border);color:var(--text-secondary);display:inline-flex;align-items:center;gap:4px;opacity:0;animation:chipPop .25s ease-out forwards}
 .viz-team-chip::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--chip-color);flex-shrink:0}
 @keyframes chipPop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
 /*-- Recommendation card --*/
-.viz-rec{background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.25);border-radius:10px;padding:.7rem .85rem;margin-bottom:.6rem;opacity:0;animation:slideUp .5s ease-out 1.4s both}
+.viz-rec{background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.25);border-radius:10px;padding:.7rem .85rem;margin-bottom:.6rem;opacity:0;animation:slideUp .5s ease-out 3s both}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .viz-rec-label{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem;font-weight:600}
 .viz-rec-main{display:flex;align-items:baseline;gap:.45rem;margin-bottom:.35rem}
@@ -97,30 +112,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .viz-rec-dots{display:flex;gap:4px;margin-bottom:.25rem}
 .viz-rec-dot{width:10px;height:10px;border-radius:50%;opacity:0;animation:dotPop .3s ease-out forwards}
 @keyframes dotPop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
-.viz-rec-count{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-secondary);opacity:0;animation:fadeUp .3s ease-out 2.2s both}
+.viz-rec-count{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-secondary);opacity:0;animation:fadeUp .3s ease-out 3.6s both}
 .viz-rec-hl{color:var(--accent);font-weight:500}
 /*-- Alternative card --*/
-.viz-alt{background:var(--bg-cell);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 2.5s both}
+.viz-alt{background:var(--bg-cell);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 4.3s both}
 .viz-alt-day{font-size:.78rem;font-weight:600;color:var(--text-primary)}
 .viz-alt-time{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-muted);margin-bottom:.25rem}
 .viz-alt-dots{display:flex;gap:3px;margin-bottom:.2rem}
 .viz-alt-dot{width:8px;height:8px;border-radius:50%;opacity:0;animation:dotPop .25s ease-out forwards}
 .viz-alt-dot.absent{background:transparent!important;border:1px solid var(--border-light)}
 /*-- Mini scenario explorer --*/
-.viz-scenario{border:1.5px dashed rgba(34,211,238,0.25);border-radius:8px;padding:.45rem .65rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 2.7s both}
+.viz-scenario{border:1.5px dashed rgba(34,211,238,0.25);border-radius:8px;padding:.45rem .65rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 3.5s both}
 .viz-scenario-header{display:flex;align-items:center;gap:.4rem;font-size:.62rem;color:var(--text-secondary);line-height:1.4;margin-bottom:.3rem}
 .viz-scenario-chev{font-size:.5rem;color:var(--text-muted);transform:rotate(90deg)}
 .viz-scenario-badge{font-family:'JetBrains Mono',monospace;font-size:.45rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(34,211,238,0.7);background:rgba(34,211,238,0.08);padding:1px 4px;border-radius:2px}
-.viz-scenario-card{padding:.3rem .5rem;border-left:1.5px dashed rgba(34,211,238,0.3);border-radius:0 5px 5px 0;background:rgba(34,211,238,0.03);font-size:.62rem;color:var(--text-secondary);line-height:1.45;display:flex;align-items:flex-start;gap:.35rem;margin-top:3px;opacity:0;animation:fadeUp .35s ease-out 3s both}
-.viz-scenario-card-2{animation-delay:3.15s}
-.viz-scenario-card-3{animation-delay:3.3s}
+.viz-scenario-card{padding:.3rem .5rem;border-left:1.5px dashed rgba(34,211,238,0.3);border-radius:0 5px 5px 0;background:rgba(34,211,238,0.03);font-size:.62rem;color:var(--text-secondary);line-height:1.45;display:flex;align-items:flex-start;gap:.35rem;margin-top:3px;opacity:0;animation:fadeUp .35s ease-out 3.8s both}
+.viz-scenario-card-2{animation-delay:3.95s}
+.viz-scenario-card-3{animation-delay:4.1s}
 .viz-scenario-card strong{color:var(--text-primary);font-weight:600}
 .viz-scenario-icon{flex-shrink:0;color:var(--text-muted);font-size:.6rem;width:1em;text-align:center;margin-top:1px}
 /*-- Mini insights --*/
-.viz-insights{opacity:0;animation:slideUp .5s ease-out 3.8s both}
+.viz-insights{opacity:0;animation:slideUp .5s ease-out 5s both}
 .viz-insight{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;font-size:.7rem;color:var(--text-secondary);line-height:1.4;opacity:0}
-.viz-insight:first-child{animation:fadeUp .4s ease-out 4s both}
-.viz-insight:last-child{animation:fadeUp .4s ease-out 4.3s both}
+.viz-insight:first-child{animation:fadeUp .4s ease-out 5.2s both}
+.viz-insight:last-child{animation:fadeUp .4s ease-out 5.5s both}
 .viz-insight-icon{flex-shrink:0;color:var(--text-muted);font-size:.7rem;width:1em;text-align:center;margin-top:1px}
 .viz-insight strong{color:var(--text-primary);font-weight:600}
 .viz-alt-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--text-muted)}
@@ -378,6 +393,53 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <span class="viz-title">When2Solve</span>
         </div>
         <div class="viz-body">
+          <div class="w2m-overlay">
+            <div class="w2m-title">when2meet.com</div>
+            <div class="w2m-grid">
+              <div class="w2m-corner"></div><div class="w2m-day">Mon</div><div class="w2m-day">Tue</div><div class="w2m-day">Wed</div><div class="w2m-day">Thu</div><div class="w2m-day">Fri</div>
+              <div class="w2m-tl">9 AM</div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-tl">10 AM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-tl">11 AM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div>
+              <div class="w2m-tl">12 PM</div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-tl">1 PM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-tl">2 PM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-tl">3 PM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-4"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-3"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-tl">4 PM</div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-tl">5 PM</div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-tl">6 PM</div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-2"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+              <div class="w2m-ts"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div><div class="w2m-cell w2m-1"></div>
+            </div>
+            <div class="w2m-scan"></div>
+          </div>
           <div class="viz-team">
             <span class="viz-team-chip" style="--chip-color:#f472b6">Alex</span>
             <span class="viz-team-chip" style="--chip-color:#60a5fa">Blake</span>
@@ -547,7 +609,7 @@ const DAY_LABELS = {0:'Sun',1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
 function animateHeroViz() {
   // Stagger team chip animations
   document.querySelectorAll('.viz-team-chip').forEach((chip, i) => {
-    chip.style.animationDelay = (0.6 + i * 0.06) + 's';
+    chip.style.animationDelay = (2.6 + i * 0.06) + 's';
   });
   // Recommendation dots (8 present + 4 absent — 12 people total)
   const recDots = document.getElementById('vizRecDots');
@@ -556,7 +618,7 @@ function animateHeroViz() {
       const d = document.createElement('div');
       d.className = 'viz-rec-dot';
       d.style.background = c;
-      d.style.animationDelay = (1.6 + i * 0.06) + 's';
+      d.style.animationDelay = (3.2 + i * 0.06) + 's';
       recDots.appendChild(d);
     });
     for (let j = 0; j < 4; j++) {
@@ -564,7 +626,7 @@ function animateHeroViz() {
       a.className = 'viz-rec-dot';
       a.style.background = 'transparent';
       a.style.border = '1px solid rgba(255,255,255,0.15)';
-      a.style.animationDelay = (1.6 + (8 + j) * 0.06) + 's';
+      a.style.animationDelay = (3.2 + (8 + j) * 0.06) + 's';
       recDots.appendChild(a);
     }
   }
@@ -575,13 +637,13 @@ function animateHeroViz() {
       const d = document.createElement('div');
       d.className = 'viz-alt-dot';
       d.style.background = c;
-      d.style.animationDelay = (2.7 + i * 0.05) + 's';
+      d.style.animationDelay = (4.5 + i * 0.05) + 's';
       altDots.appendChild(d);
     });
     for (let j = 0; j < 5; j++) {
       const a = document.createElement('div');
       a.className = 'viz-alt-dot absent';
-      a.style.animationDelay = (2.7 + (7 + j) * 0.05) + 's';
+      a.style.animationDelay = (4.5 + (7 + j) * 0.05) + 's';
       altDots.appendChild(a);
     }
   }
