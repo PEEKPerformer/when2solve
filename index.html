@@ -106,11 +106,21 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .viz-alt-dots{display:flex;gap:3px;margin-bottom:.2rem}
 .viz-alt-dot{width:8px;height:8px;border-radius:50%;opacity:0;animation:dotPop .25s ease-out forwards}
 .viz-alt-dot.absent{background:transparent!important;border:1px solid var(--border-light)}
+/*-- Mini scenario explorer --*/
+.viz-scenario{border:1.5px dashed rgba(34,211,238,0.25);border-radius:8px;padding:.45rem .65rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 2.7s both}
+.viz-scenario-header{display:flex;align-items:center;gap:.4rem;font-size:.62rem;color:var(--text-secondary);line-height:1.4;margin-bottom:.3rem}
+.viz-scenario-chev{font-size:.5rem;color:var(--text-muted);transform:rotate(90deg)}
+.viz-scenario-badge{font-family:'JetBrains Mono',monospace;font-size:.45rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(34,211,238,0.7);background:rgba(34,211,238,0.08);padding:1px 4px;border-radius:2px}
+.viz-scenario-card{padding:.3rem .5rem;border-left:1.5px dashed rgba(34,211,238,0.3);border-radius:0 5px 5px 0;background:rgba(34,211,238,0.03);font-size:.62rem;color:var(--text-secondary);line-height:1.45;display:flex;align-items:flex-start;gap:.35rem;margin-top:3px;opacity:0;animation:fadeUp .35s ease-out 3s both}
+.viz-scenario-card-2{animation-delay:3.15s}
+.viz-scenario-card-3{animation-delay:3.3s}
+.viz-scenario-card strong{color:var(--text-primary);font-weight:600}
+.viz-scenario-icon{flex-shrink:0;color:var(--text-muted);font-size:.6rem;width:1em;text-align:center;margin-top:1px}
 /*-- Mini insights --*/
-.viz-insights{opacity:0;animation:slideUp .5s ease-out 3s both}
+.viz-insights{opacity:0;animation:slideUp .5s ease-out 3.8s both}
 .viz-insight{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;font-size:.7rem;color:var(--text-secondary);line-height:1.4;opacity:0}
-.viz-insight:first-child{animation:fadeUp .4s ease-out 3.2s both}
-.viz-insight:last-child{animation:fadeUp .4s ease-out 3.5s both}
+.viz-insight:first-child{animation:fadeUp .4s ease-out 4s both}
+.viz-insight:last-child{animation:fadeUp .4s ease-out 4.3s both}
 .viz-insight-icon{flex-shrink:0;color:var(--text-muted);font-size:.7rem;width:1em;text-align:center;margin-top:1px}
 .viz-insight strong{color:var(--text-primary);font-weight:600}
 .viz-alt-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--text-muted)}
@@ -377,30 +387,54 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
             <span class="viz-team-chip" style="--chip-color:#fb923c">Frankie</span>
             <span class="viz-team-chip" style="--chip-color:#2dd4bf">Gabi</span>
             <span class="viz-team-chip" style="--chip-color:#f87171">Harper</span>
+            <span class="viz-team-chip" style="--chip-color:#818cf8">Jordan</span>
+            <span class="viz-team-chip" style="--chip-color:#a3e635">Kit</span>
+            <span class="viz-team-chip" style="--chip-color:#fb7185">Lee</span>
+            <span class="viz-team-chip" style="--chip-color:#38bdf8">Morgan</span>
           </div>
           <div class="viz-rec">
             <div class="viz-rec-label">Recommended</div>
             <div class="viz-rec-main">
-              <span class="viz-rec-day">Monday</span>
-              <span class="viz-rec-time">10:00 &ndash; 11:00 AM</span>
+              <span class="viz-rec-day">Wednesday</span>
+              <span class="viz-rec-time">3:00 &ndash; 4:00 PM</span>
             </div>
             <div class="viz-rec-dots" id="vizRecDots"></div>
-            <div class="viz-rec-count">8 of 8 &mdash; <span class="viz-rec-hl">everyone</span></div>
+            <div class="viz-rec-count">8 of 12 &mdash; without <span style="color:#818cf8">Jordan</span>, <span style="color:#a3e635">Kit</span>, <span style="color:#fb7185">Lee</span>, <span style="color:#38bdf8">Morgan</span></div>
+          </div>
+          <div class="viz-scenario">
+            <div class="viz-scenario-header">
+              <span class="viz-scenario-chev">&#9656;</span>
+              <span class="viz-scenario-badge">WHAT-IF</span>
+              <i class="fa-solid fa-flask" style="font-size:.6rem;color:var(--text-muted)"></i>
+              <span>8 of 12 can meet. Adding a second meeting brings it to 11.</span>
+            </div>
+            <div class="viz-scenario-card">
+              <span class="viz-scenario-icon"><i class="fa-solid fa-ghost"></i></span>
+              <span><strong>1 ghost:</strong> Jordan signed up but didn&rsquo;t mark any availability</span>
+            </div>
+            <div class="viz-scenario-card viz-scenario-card-2">
+              <span class="viz-scenario-icon"><i class="fa-solid fa-arrows-left-right"></i></span>
+              <span><strong>Kit is close:</strong> extend <span style="color:var(--accent)">30 min earlier</span> on Wed to join</span>
+            </div>
+            <div class="viz-scenario-card viz-scenario-card-3">
+              <span class="viz-scenario-icon"><i class="fa-solid fa-clone"></i></span>
+              <span><strong>2 meetings help:</strong> 1 meeting: <strong>8/12</strong>. 2 meetings: <strong>11/12</strong></span>
+            </div>
           </div>
           <div class="viz-alt">
-            <div class="viz-alt-day">Wednesday</div>
-            <div class="viz-alt-time">2:00 &ndash; 3:00 PM</div>
+            <div class="viz-alt-day">Thursday</div>
+            <div class="viz-alt-time">10:00 &ndash; 11:00 AM</div>
             <div class="viz-alt-dots" id="vizAltDots"></div>
-            <div class="viz-alt-count">7 of 8</div>
+            <div class="viz-alt-count">7 of 12</div>
           </div>
           <div class="viz-insights">
             <div class="viz-insight">
               <span class="viz-insight-icon"><i class="fa-solid fa-right-left"></i></span>
-              <span><strong>Ships in the night:</strong> Alex &amp; Dana never overlap</span>
+              <span><strong>Ships in the night:</strong> Alex &amp; Morgan never overlap</span>
             </div>
             <div class="viz-insight">
               <span class="viz-insight-icon"><i class="fa-solid fa-bolt"></i></span>
-              <span><strong>Power hour:</strong> Mon 10 AM &mdash; peak availability</span>
+              <span><strong>Power hour:</strong> Wed 3 PM &mdash; peak availability</span>
             </div>
           </div>
         </div>
@@ -515,31 +549,41 @@ function animateHeroViz() {
   document.querySelectorAll('.viz-team-chip').forEach((chip, i) => {
     chip.style.animationDelay = (0.6 + i * 0.06) + 's';
   });
-  // Recommendation dots
+  // Recommendation dots (8 present + 4 absent — 12 people total)
   const recDots = document.getElementById('vizRecDots');
   if (recDots) {
     ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171'].forEach((c, i) => {
       const d = document.createElement('div');
       d.className = 'viz-rec-dot';
       d.style.background = c;
-      d.style.animationDelay = (1.6 + i * 0.07) + 's';
+      d.style.animationDelay = (1.6 + i * 0.06) + 's';
       recDots.appendChild(d);
     });
+    for (let j = 0; j < 4; j++) {
+      const a = document.createElement('div');
+      a.className = 'viz-rec-dot';
+      a.style.background = 'transparent';
+      a.style.border = '1px solid rgba(255,255,255,0.15)';
+      a.style.animationDelay = (1.6 + (8 + j) * 0.06) + 's';
+      recDots.appendChild(a);
+    }
   }
-  // Alternative card dots (7 present + 1 absent)
+  // Alternative card dots (7 present + 5 absent)
   const altDots = document.getElementById('vizAltDots');
   if (altDots) {
     ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf'].forEach((c, i) => {
       const d = document.createElement('div');
       d.className = 'viz-alt-dot';
       d.style.background = c;
-      d.style.animationDelay = (2.7 + i * 0.06) + 's';
+      d.style.animationDelay = (2.7 + i * 0.05) + 's';
       altDots.appendChild(d);
     });
-    const absent = document.createElement('div');
-    absent.className = 'viz-alt-dot absent';
-    absent.style.animationDelay = (2.7 + 7 * 0.06) + 's';
-    altDots.appendChild(absent);
+    for (let j = 0; j < 5; j++) {
+      const a = document.createElement('div');
+      a.className = 'viz-alt-dot absent';
+      a.style.animationDelay = (2.7 + (7 + j) * 0.05) + 's';
+      altDots.appendChild(a);
+    }
   }
 }
 
@@ -1987,8 +2031,9 @@ function computeBottlenecks(results) {
   const N = names.length;
   if (N === 0 || !results || results.single.length === 0) return null;
 
-  // 3a. Ghost detection — signed up but 0 availability
+  // 3a. Ghost detection — signed up but 0 availability, or near-ghost (< 1hr total)
   const ghosts = names.filter(n => getTotalHours(n) === 0);
+  const nearGhosts = names.filter(n => { const h = getTotalHours(n); return h > 0 && h < 1; });
 
   // 3b. Duplicate detection — whitespace-trim exact match only
   const seen = {};
@@ -2029,7 +2074,7 @@ function computeBottlenecks(results) {
   // 3d. Slot proximity analysis — for each person missing from best window
   const slotSuggestions = [];
   for (const n of [...bestWindow.missing]) {
-    if (ghosts.includes(n)) continue;
+    if (ghosts.includes(n) || nearGhosts.includes(n)) continue;
     // Find this person's availability on the best window's day
     const dayKey = bestWindow.dayKey;
     const daySlots = STATE.dayMap[dayKey] ? STATE.dayMap[dayKey].slots : [];
@@ -2077,27 +2122,37 @@ function computeBottlenecks(results) {
     }
   }
 
-  return { ghosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N };
+  return { ghosts, nearGhosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N };
 }
 
 function computeSuggestions(results, bottlenecks) {
   const suggestions = [];
   if (!bottlenecks) return { suggestions, summary: '' };
-  const { ghosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N } = bottlenecks;
+  const { ghosts, nearGhosts, duplicates, perPerson, slotSuggestions, bestWindow, bestCount, N } = bottlenecks;
 
   // Silence rules
   if (results.singleCovers) return { suggestions, summary: '' };
   if (bestCount / N >= 0.9) return { suggestions, summary: '' };
 
-  // Priority 0: Ghosts
-  if (ghosts.length > 0) {
-    const ghostNames = ghosts.map(n => n);
-    const verb = ghosts.length === 1 ? 'signed up but didn\u2019t' : 'signed up but didn\u2019t';
+  // Priority 0: Ghosts + near-ghosts
+  const allGhostish = ghosts.length + nearGhosts.length;
+  if (allGhostish > 0) {
+    let parts = [];
+    if (ghosts.length > 0) {
+      parts.push(`<strong>${ghosts.join(', ')}</strong> signed up but didn\u2019t mark any availability`);
+    }
+    if (nearGhosts.length > 0) {
+      const nearParts = nearGhosts.map(n => {
+        const mins = Math.round(getTotalHours(n) * 60);
+        return `${n} (${mins}min)`;
+      });
+      parts.push(`<strong>${nearParts.join(', ')}</strong> marked less than 1 hour total`);
+    }
     suggestions.push({
       type: 'ghost', priority: 0,
       icon: '<i class="fa-solid fa-ghost"></i>',
-      title: `${ghosts.length} ghost${ghosts.length > 1 ? 's' : ''}`,
-      text: `<strong>${ghostNames.join(', ')}</strong> ${verb} mark any availability — they responded, they just didn\u2019t click slots`
+      title: `${allGhostish} ghost${allGhostish > 1 ? 's' : ''}`,
+      text: parts.join('. Also, ')
     });
   }
 
