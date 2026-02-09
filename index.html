@@ -106,46 +106,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .heat-bar{flex:1}
 
 /*── Setup Section ──*/
-.setup{max-width:1000px;margin:0 auto;padding:4rem clamp(2rem,5vw,6rem);width:100%}
-.section-title{font-size:1.5rem;font-weight:600;margin-bottom:2rem;color:var(--text-primary)}
-.setup-tracks{display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;align-items:start}
-.track{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .3s}
-.track:hover{border-color:var(--border-light)}
-.track-header{display:flex;align-items:center;gap:.6rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.track-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);color:var(--accent);border-radius:6px;font-size:.8rem}
-.track-label{font-weight:600;font-size:1rem}
-.track-for{font-size:.75rem;color:var(--text-muted);margin-left:auto;font-style:italic}
-.track-body{padding:1.2rem}
-.bm-container{text-align:center;margin-bottom:.4rem}
-.bm-button{display:inline-block;padding:.75rem 1.6rem;background:linear-gradient(145deg,#1a2a40,#0f1a2a);border:1.5px solid var(--accent);border-radius:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:600;letter-spacing:.04em;text-decoration:none;cursor:grab;transition:all .3s ease;box-shadow:0 0 20px rgba(34,211,238,0.1),0 4px 20px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;user-select:none}
-.bm-button:hover{transform:translateY(-3px);box-shadow:0 0 35px rgba(34,211,238,0.2),0 8px 30px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.08);background:linear-gradient(145deg,#1e3350,#132238)}
-.bm-button:active{cursor:grabbing;transform:translateY(-1px)}
-.bm-button::before{content:'';position:absolute;inset:-1px;border-radius:11px;background:linear-gradient(135deg,rgba(34,211,238,0.2),transparent 60%);z-index:-1;opacity:0;transition:opacity .3s}
-.bm-button:hover::before{opacity:1}
-.track-instruction{font-size:.85rem;color:var(--text-secondary);line-height:1.5;margin-top:.8rem;text-align:center}
-.track-note{font-size:.72rem;color:var(--text-muted);margin-top:.5rem;text-align:center}
-
-/*── Guided Steps ──*/
-.guide-steps{display:flex;flex-direction:column;gap:1.2rem}
-.guide-step{display:flex;gap:.8rem}
-.guide-num{width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);color:var(--accent);border-radius:50%;font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;margin-top:1px}
-.guide-content{flex:1}
-.guide-title{font-weight:600;font-size:.9rem;margin-bottom:.2rem}
-.guide-desc{font-size:.8rem;color:var(--text-secondary);line-height:1.5}
-.guide-desc kbd{font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:.12rem .35rem;background:rgba(255,255,255,0.06);border:1px solid var(--border-light);border-radius:4px;color:var(--text-primary)}
-.mock-browser{margin-top:.6rem;background:#1a1f2e;border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.mock-tab-bar{display:flex;padding:4px 8px 0;background:rgba(0,0,0,0.3)}
-.mock-tab{padding:4px 10px;background:var(--bg-cell);border-radius:4px 4px 0 0;color:var(--text-muted);font-size:.62rem}
-.mock-bm-bar{display:flex;gap:8px;padding:4px 8px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(0,0,0,0.15)}
-.mock-bm{font-size:.6rem;color:var(--text-muted);padding:2px 6px;border-radius:3px}
-.mock-bm--new{color:var(--accent);background:var(--accent-dim);animation:blink 1.5s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-.mock-url-bar{padding:4px 8px;font-size:.58rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
-.guide-drag-zone{display:flex;flex-direction:column;align-items:center;margin-top:.6rem}
-.drag-arrow{display:flex;flex-direction:column;align-items:center;gap:.15rem;margin-top:.5rem;color:var(--accent);font-size:.75rem;animation:bounce 1.5s ease-in-out infinite}
-.drag-arrow span{font-family:'JetBrains Mono',monospace;font-size:.62rem}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-
 /*── Landing Footer ──*/
 .landing-footer{text-align:center;font-size:.82rem;color:var(--text-muted);padding:2rem;border-top:1px solid var(--border)}
 .landing-footer a{color:var(--accent);text-decoration:none}
@@ -160,9 +120,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   .hero-actions{justify-content:center}
   .hero-headline{font-size:clamp(2rem,8vw,3rem)}
   .viz-badges{display:none}
-  .setup-tracks{grid-template-columns:1fr}
-  .setup{padding:2rem 1.5rem}
-  .track-for{margin-left:0;width:100%}
 }
 
 /*═══════════════════════════════════════════════════════════════
@@ -369,7 +326,6 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
       <div class="hero-actions">
         <button class="cta-secondary-btn" onclick="loadDemo()"><i class="fa-solid fa-play"></i> Try with demo data</button>
-        <a href="#setup" class="cta-secondary">Or use the bookmarklet <i class="fa-solid fa-arrow-down"></i></a>
       </div>
     </div>
 
@@ -410,73 +366,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="heat-bar" style="background:var(--heat-8)"></div>
   </div>
 
-  <section class="setup" id="setup">
-    <h2 class="section-title">Get started in 30 seconds</h2>
-    <div class="setup-tracks">
-      <div class="track track--power">
-        <div class="track-header">
-          <span class="track-icon"><i class="fa-solid fa-bolt"></i></span>
-          <span class="track-label">Quick setup</span>
-          <span class="track-for">I know bookmarklets</span>
-        </div>
-        <div class="track-body">
-          <div class="bm-container">
-            <a class="bm-button" id="bookmarklet" href="#"><i class="fa-solid fa-bolt"></i> When2Solve</a>
-          </div>
-          <p class="track-instruction">Drag to your bookmark bar. Visit any When2Meet. Click it.</p>
-          <p class="track-note">Works on any When2Meet event &middot; No data leaves your browser</p>
-        </div>
-      </div>
-
-      <div class="track track--guided">
-        <div class="track-header">
-          <span class="track-icon"><i class="fa-solid fa-hand-pointer"></i></span>
-          <span class="track-label">Guided setup</span>
-          <span class="track-for">Show me step by step</span>
-        </div>
-        <div class="track-body">
-          <div class="guide-steps">
-            <div class="guide-step">
-              <div class="guide-num">1</div>
-              <div class="guide-content">
-                <div class="guide-title">Show your bookmark bar</div>
-                <div class="guide-desc">Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on Mac) to reveal it.</div>
-                <div class="mock-browser">
-                  <div class="mock-tab-bar"><div class="mock-tab">When2Meet</div></div>
-                  <div class="mock-bm-bar">
-                    <span class="mock-bm">Bookmarks</span>
-                    <span class="mock-bm mock-bm--new"><i class="fa-solid fa-bolt"></i> When2Solve</span>
-                  </div>
-                  <div class="mock-url-bar">when2meet.com/?12345</div>
-                </div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="guide-num">2</div>
-              <div class="guide-content">
-                <div class="guide-title">Drag the button to the bar</div>
-                <div class="guide-desc">Grab this button and drop it onto your bookmark bar:</div>
-                <div class="guide-drag-zone">
-                  <a class="bm-button" id="bookmarkletGuided" href="#"><i class="fa-solid fa-bolt"></i> When2Solve</a>
-                  <div class="drag-arrow"><i class="fa-solid fa-arrow-up"></i><span>Drag me up!</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="guide-num">3</div>
-              <div class="guide-content">
-                <div class="guide-title">Visit your When2Meet &amp; click it</div>
-                <div class="guide-desc">Open your When2Meet event page, then click the When2Solve bookmark. It extracts everyone's availability and opens the optimizer instantly.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <footer class="landing-footer">
-    Built by <span class="by">Brenden Ferland</span> &middot; Zero tracking &middot; Your data never leaves your browser &middot; <a href="https://github.com/PEEKPerformer/when2solve" target="_blank">GitHub</a>
+    Built by <span class="by">Brenden Ferland</span> &middot; No analytics &middot; All solving happens in your browser &middot; <a href="https://github.com/PEEKPerformer/when2solve" target="_blank">GitHub</a>
   </footer>
 </div>
 
@@ -566,24 +457,6 @@ let STATE = {
 const PCOLORS = ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171',
                  '#c084fc','#4ade80','#fca5a5','#67e8f9','#fde047','#d946ef','#a3e635','#fb7185'];
 const DAY_LABELS = {0:'Sun',1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
-const BASE_URL = location.href.split('#')[0];
-
-/*═══════════════════════════════════════════════════════════════
-  BOOKMARKLET
-═══════════════════════════════════════════════════════════════*/
-function setupBookmarklet() {
-  const code = `javascript:void(function(){if(typeof PeopleNames==='undefined'){alert('Open a When2Meet event page first!');return;}try{var t=document.title.replace(/^when2meet\\s*[-–—:]\\s*/i,'').trim();var d=JSON.stringify({v:1,e:t||'',n:PeopleNames,i:PeopleIDs,a:AvailableAtSlot,t:TimeOfSlot});var h=btoa(unescape(encodeURIComponent(d)));window.location='${BASE_URL}#'+h;}catch(x){alert('Error: '+x.message);}})()`;
-  const bmEls = [document.getElementById('bookmarklet'), document.getElementById('bookmarkletGuided')];
-  bmEls.forEach(el => {
-    if (!el) return;
-    el.href = code;
-    el.addEventListener('click', function(e) {
-      e.preventDefault();
-      alert('Drag this button to your bookmark bar!\nThen visit a When2Meet page and click it.');
-    });
-  });
-}
-
 function animateMiniHeatmap() {
   const grid = document.getElementById('miniHeatmap');
   if (!grid) return;
@@ -666,7 +539,7 @@ function fetchFromUrl() {
       }
       status.className = 'url-status success';
       status.textContent = `Found ${data.n.length} participants. Loading...`;
-      // Encode and launch via hash (same path as bookmarklet)
+      // Encode and launch via hash
       const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
       location.hash = encoded;
     })
@@ -2273,7 +2146,6 @@ function goHome() {
   INIT
 ═══════════════════════════════════════════════════════════════*/
 function init() {
-  setupBookmarklet();
   animateMiniHeatmap();
 
   const raw = decodeHash();
