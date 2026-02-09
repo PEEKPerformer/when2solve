@@ -2183,6 +2183,10 @@ function goHome() {
   location.hash = '';
   document.getElementById('solver').classList.remove('active');
   document.getElementById('landing').classList.remove('hidden');
+  document.getElementById('w2mUrl').value = '';
+  const status = document.getElementById('urlStatus');
+  status.className = 'url-status';
+  status.textContent = '';
 }
 
 /*═══════════════════════════════════════════════════════════════
