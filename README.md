@@ -1,6 +1,6 @@
 # When2Solve
 
-**When2Meet finds times. We find answers.**
+**When2Meet shows you a heatmap. This skips it and gives you the answer.**
 
 A client-side When2Meet optimizer that takes your group's availability and instantly recommends optimal meeting times — with constraints, multi-meeting coverage, and 30 scheduling insights.
 

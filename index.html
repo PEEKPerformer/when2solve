@@ -82,24 +82,44 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .viz-dot--r{background:#ef4444}.viz-dot--y{background:#fbbf24}.viz-dot--g{background:#34d399}
 .viz-title{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-muted);margin-left:auto;letter-spacing:.05em}
 .viz-body{padding:1rem}
-.mini-heatmap{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:.8rem}
-.mini-cell{height:14px;border-radius:3px;opacity:0;animation:cellFill .4s ease-out forwards;animation-delay:var(--delay,0s)}
-@keyframes cellFill{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
-.mini-solution{background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.25);border-radius:8px;padding:.7rem .8rem;opacity:0;animation:slideUp .5s ease-out 2.5s both}
+/*-- Mini team chips --*/
+.viz-team{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.7rem}
+.viz-team-chip{font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:3px 8px;border-radius:12px;border:1px solid var(--border);color:var(--text-secondary);display:inline-flex;align-items:center;gap:4px;opacity:0;animation:chipPop .25s ease-out forwards}
+.viz-team-chip::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--chip-color);flex-shrink:0}
+@keyframes chipPop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+/*-- Recommendation card --*/
+.viz-rec{background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.25);border-radius:10px;padding:.7rem .85rem;margin-bottom:.6rem;opacity:0;animation:slideUp .5s ease-out 1.4s both}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.mini-sol-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.15rem}
-.mini-sol-day{font-weight:600;font-size:.88rem}
-.mini-sol-time{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-secondary);margin-bottom:.4rem}
-.mini-sol-dots{display:flex;gap:4px;margin-bottom:.3rem}
-.mini-sol-dot{width:10px;height:10px;border-radius:50%;opacity:0;animation:dotPop .3s ease-out forwards}
+.viz-rec-label{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem;font-weight:600}
+.viz-rec-main{display:flex;align-items:baseline;gap:.45rem;margin-bottom:.35rem}
+.viz-rec-day{font-size:1rem;font-weight:700;color:var(--text-primary)}
+.viz-rec-time{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-secondary)}
+.viz-rec-dots{display:flex;gap:4px;margin-bottom:.25rem}
+.viz-rec-dot{width:10px;height:10px;border-radius:50%;opacity:0;animation:dotPop .3s ease-out forwards}
 @keyframes dotPop{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
-.mini-sol-status{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--accent)}
+.viz-rec-count{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-secondary);opacity:0;animation:fadeUp .3s ease-out 2.2s both}
+.viz-rec-hl{color:var(--accent);font-weight:500}
+/*-- Alternative card --*/
+.viz-alt{background:var(--bg-cell);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;margin-bottom:.6rem;opacity:0;animation:slideUp .4s ease-out 2.5s both}
+.viz-alt-day{font-size:.78rem;font-weight:600;color:var(--text-primary)}
+.viz-alt-time{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-muted);margin-bottom:.25rem}
+.viz-alt-dots{display:flex;gap:3px;margin-bottom:.2rem}
+.viz-alt-dot{width:8px;height:8px;border-radius:50%;opacity:0;animation:dotPop .25s ease-out forwards}
+.viz-alt-dot.absent{background:transparent!important;border:1px solid var(--border-light)}
+/*-- Mini insights --*/
+.viz-insights{opacity:0;animation:slideUp .5s ease-out 3s both}
+.viz-insight{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;font-size:.7rem;color:var(--text-secondary);line-height:1.4;opacity:0}
+.viz-insight:first-child{animation:fadeUp .4s ease-out 3.2s both}
+.viz-insight:last-child{animation:fadeUp .4s ease-out 3.5s both}
+.viz-insight-icon{flex-shrink:0;color:var(--text-muted);font-size:.7rem;width:1em;text-align:center;margin-top:1px}
+.viz-insight strong{color:var(--text-primary);font-weight:600}
+.viz-alt-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--text-muted)}
 
 .viz-badges{position:absolute;right:-10px;top:50%;display:flex;flex-direction:column;gap:.5rem;transform:translateY(-50%)}
 .viz-badge{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:.25rem .6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0}
 .viz-badge i{color:var(--accent);margin-right:4px}
-.viz-badge--1{animation:fadeUp .4s ease-out 3s both}
-.viz-badge--2{animation:fadeUp .4s ease-out 3.4s both}
+.viz-badge--1{animation:fadeUp .4s ease-out 3.8s both}
+.viz-badge--2{animation:fadeUp .4s ease-out 4.2s both}
 
 /*── Heat Divider ──*/
 .heat-divider{display:flex;height:3px;width:100%}
@@ -312,8 +332,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
         <span class="hero-badge">No servers. No signup. Runs in your browser.</span>
       </div>
       <h1 class="hero-headline">
-        <span class="hero-line hero-line--dim">When2Meet finds times.</span>
-        <span class="hero-line hero-line--bright">We find <em>answers</em>.</span>
+        <span class="hero-line hero-line--dim">When2Meet shows you a heatmap.</span>
+        <span class="hero-line hero-line--bright">Skip it. Get the <em>answer</em>.</span>
       </h1>
       <p class="hero-sub">Paste your When2Meet link and get instant meeting recommendations with constraints, multi-meeting coverage, and scheduling insights.</p>
       <div class="url-input-group">
@@ -338,19 +358,46 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
           <span class="viz-title">When2Solve</span>
         </div>
         <div class="viz-body">
-          <div class="mini-heatmap" id="miniHeatmap"></div>
-          <div class="mini-solution" id="miniSolution">
-            <div class="mini-sol-label">Recommended</div>
-            <div class="mini-sol-day">Monday 10:00 &ndash; 11:00 AM</div>
-            <div class="mini-sol-time">Best window this week</div>
-            <div class="mini-sol-dots" id="miniSolDots"></div>
-            <div class="mini-sol-status">8 of 8 &mdash; full attendance</div>
+          <div class="viz-team">
+            <span class="viz-team-chip" style="--chip-color:#f472b6">Alex</span>
+            <span class="viz-team-chip" style="--chip-color:#60a5fa">Blake</span>
+            <span class="viz-team-chip" style="--chip-color:#a78bfa">Casey</span>
+            <span class="viz-team-chip" style="--chip-color:#34d399">Dana</span>
+            <span class="viz-team-chip" style="--chip-color:#fbbf24">Eli</span>
+            <span class="viz-team-chip" style="--chip-color:#fb923c">Frankie</span>
+            <span class="viz-team-chip" style="--chip-color:#2dd4bf">Gabi</span>
+            <span class="viz-team-chip" style="--chip-color:#f87171">Harper</span>
+          </div>
+          <div class="viz-rec">
+            <div class="viz-rec-label">Recommended</div>
+            <div class="viz-rec-main">
+              <span class="viz-rec-day">Monday</span>
+              <span class="viz-rec-time">10:00 &ndash; 11:00 AM</span>
+            </div>
+            <div class="viz-rec-dots" id="vizRecDots"></div>
+            <div class="viz-rec-count">8 of 8 &mdash; <span class="viz-rec-hl">everyone</span></div>
+          </div>
+          <div class="viz-alt">
+            <div class="viz-alt-day">Wednesday</div>
+            <div class="viz-alt-time">2:00 &ndash; 3:00 PM</div>
+            <div class="viz-alt-dots" id="vizAltDots"></div>
+            <div class="viz-alt-count">7 of 8</div>
+          </div>
+          <div class="viz-insights">
+            <div class="viz-insight">
+              <span class="viz-insight-icon"><i class="fa-solid fa-right-left"></i></span>
+              <span><strong>Ships in the night:</strong> Alex &amp; Dana never overlap</span>
+            </div>
+            <div class="viz-insight">
+              <span class="viz-insight-icon"><i class="fa-solid fa-bolt"></i></span>
+              <span><strong>Power hour:</strong> Mon 10 AM &mdash; peak availability</span>
+            </div>
           </div>
         </div>
       </div>
       <div class="viz-badges">
         <div class="viz-badge viz-badge--1"><i class="fa-solid fa-bullseye"></i> 3 unanimous windows</div>
-        <div class="viz-badge viz-badge--2"><i class="fa-solid fa-bolt"></i> Power hour: Mon 10a</div>
+        <div class="viz-badge viz-badge--2"><i class="fa-solid fa-user-group"></i> Best buds: Blake + Casey</div>
       </div>
     </div>
   </section>
@@ -457,37 +504,36 @@ let STATE = {
 const PCOLORS = ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171',
                  '#c084fc','#4ade80','#fca5a5','#67e8f9','#fde047','#d946ef','#a3e635','#fb7185'];
 const DAY_LABELS = {0:'Sun',1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
-function animateMiniHeatmap() {
-  const grid = document.getElementById('miniHeatmap');
-  if (!grid) return;
-  const heatData = [
-    [6,4,5,3,2],[8,5,6,4,3],[8,6,5,5,3],
-    [7,4,4,3,2],[5,3,3,2,1],[5,5,4,2,0],[4,3,3,3,0]
-  ];
-  const colors = [
-    'var(--heat-0)','var(--heat-1)','var(--heat-2)','var(--heat-3)',
-    'var(--heat-4)','var(--heat-5)','var(--heat-6)','var(--heat-7)','var(--heat-8)'
-  ];
-  let idx = 0;
-  for (let r = 0; r < 7; r++) {
-    for (let c = 0; c < 5; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'mini-cell';
-      cell.style.background = colors[Math.min(heatData[r][c], 8)];
-      cell.style.setProperty('--delay', (0.6 + idx * 0.045) + 's');
-      grid.appendChild(cell);
-      idx++;
-    }
-  }
-  const dots = document.getElementById('miniSolDots');
-  if (dots) {
+function animateHeroViz() {
+  // Stagger team chip animations
+  document.querySelectorAll('.viz-team-chip').forEach((chip, i) => {
+    chip.style.animationDelay = (0.6 + i * 0.06) + 's';
+  });
+  // Recommendation dots
+  const recDots = document.getElementById('vizRecDots');
+  if (recDots) {
     ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf','#f87171'].forEach((c, i) => {
       const d = document.createElement('div');
-      d.className = 'mini-sol-dot';
+      d.className = 'viz-rec-dot';
       d.style.background = c;
-      d.style.animationDelay = (2.7 + i * 0.08) + 's';
-      dots.appendChild(d);
+      d.style.animationDelay = (1.6 + i * 0.07) + 's';
+      recDots.appendChild(d);
     });
+  }
+  // Alternative card dots (7 present + 1 absent)
+  const altDots = document.getElementById('vizAltDots');
+  if (altDots) {
+    ['#f472b6','#60a5fa','#a78bfa','#34d399','#fbbf24','#fb923c','#2dd4bf'].forEach((c, i) => {
+      const d = document.createElement('div');
+      d.className = 'viz-alt-dot';
+      d.style.background = c;
+      d.style.animationDelay = (2.7 + i * 0.06) + 's';
+      altDots.appendChild(d);
+    });
+    const absent = document.createElement('div');
+    absent.className = 'viz-alt-dot absent';
+    absent.style.animationDelay = (2.7 + 7 * 0.06) + 's';
+    altDots.appendChild(absent);
   }
 }
 
@@ -2146,7 +2192,7 @@ function goHome() {
   INIT
 ═══════════════════════════════════════════════════════════════*/
 function init() {
-  animateMiniHeatmap();
+  animateHeroViz();
 
   const raw = decodeHash();
   if (raw) {
