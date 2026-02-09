@@ -658,7 +658,17 @@ function processData(raw) {
   // Sort days
   const sortedDayKeys = Object.keys(daySlots).sort();
   STATE.days = sortedDayKeys;
-  STATE.dayNames = sortedDayKeys.map(k => DAY_LABELS[daySlots[k].day] || k);
+
+  // Detect event type: 1978 = recurring (day-of-week), else = specific dates
+  const firstYear = new Date(STATE.times[0] * 1000).getUTCFullYear();
+  STATE.isRecurring = firstYear === 1978;
+  const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  STATE.dayNames = sortedDayKeys.map(k => {
+    const ds = daySlots[k];
+    if (STATE.isRecurring) return DAY_LABELS[ds.day];
+    const dt = new Date(k + 'T00:00:00Z');
+    return DAY_LABELS[ds.day] + ' ' + MONTH_SHORT[dt.getUTCMonth()] + ' ' + dt.getUTCDate();
+  });
   STATE.dayMap = daySlots;
   STATE.slots = allSlots;
 
@@ -748,7 +758,7 @@ function solve() {
       windows.push({
         key,
         dayKey, day: windowSlots[0].day,
-        dayName: DAY_LABELS[windowSlots[0].day],
+        dayName: STATE.dayNames[STATE.days.indexOf(dayKey)],
         startH: windowSlots[0].h, startM: windowSlots[0].m,
         endH: endH, endM: endM % 60,
         count: common.size, attendees: common,
@@ -1494,11 +1504,8 @@ function computeInsights() {
   }
 
   // --- 14. Friday Flight Risk — Friday drops >40% vs best day ---
-  {
-    const fridayKey = STATE.days.find(dk => {
-      const idx = STATE.days.indexOf(dk);
-      return STATE.dayNames[idx] === 'Friday';
-    });
+  if (STATE.isRecurring) {
+    const fridayKey = STATE.days.find(dk => STATE.dayMap[dk].day === 5);
     if (fridayKey && dayEntries.length > 1) {
       const friCount = dayTotals[fridayKey] || 0;
       const bestDayEntry = dayEntries[dayEntries.length - 1];
