@@ -36,7 +36,7 @@ The Cloudflare Worker exists only to fetch When2Meet pages server-side (avoiding
 
 - All solving happens client-side in your browser
 - The Worker proxies When2Meet pages to bypass CORS — it parses and discards, nothing is stored
-- No analytics or cookies from this app (Cloudflare may set its own — see their [privacy policy](https://www.cloudflare.com/privacypolicy/))
+- This app includes no tracking scripts or cookies. The site is served through Cloudflare, which collects its own server-side metrics and may set cookies — see their [privacy policy](https://www.cloudflare.com/privacypolicy/)
 
 ## Self-hosting
 
