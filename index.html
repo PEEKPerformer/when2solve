@@ -662,29 +662,26 @@ document.addEventListener('mousemove', (e) => {
 ═══════════════════════════════════════════════════════════════*/
 const WORKER_URL = 'https://when2solve-api.brendenferland.workers.dev';
 
-function fetchFromUrl() {
-  const input = document.getElementById('w2mUrl');
+// Extract When2Meet ID from query string (e.g., "33962024-xkJAZ" from "?33962024-xkJAZ")
+function parseW2MId() {
+  const search = location.search.slice(1); // remove leading "?"
+  if (!search) return null;
+  const match = search.match(/^(\d+-\w+)/);
+  return match ? match[1] : null;
+}
+
+// Fetch data by When2Meet ID and launch solver
+function fetchById(id) {
+  const url = `https://when2meet.com/?${id}`;
   const status = document.getElementById('urlStatus');
-  const btn = document.getElementById('urlGo');
-  const url = input.value.trim();
 
-  if (!url) { input.focus(); return; }
-  if (!/when2meet\.com\/?\?\d+-\w+/i.test(url)) {
-    status.className = 'url-status error';
-    status.textContent = 'Not a When2Meet link. Expected: when2meet.com/?12345-XXXXX';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.classList.add('loading');
+  // Show loading state on landing page
   status.className = 'url-status loading';
   status.textContent = 'Fetching availability data...';
 
   fetch(`${WORKER_URL}/?url=${encodeURIComponent(url)}`)
     .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
     .then(({ ok, data }) => {
-      btn.disabled = false;
-      btn.classList.remove('loading');
       if (!ok || data.error) {
         status.className = 'url-status error';
         status.textContent = data.error || 'Unknown error';
@@ -695,18 +692,35 @@ function fetchFromUrl() {
         status.textContent = 'No participants found. Has anyone filled in availability yet?';
         return;
       }
-      status.className = 'url-status success';
-      status.textContent = `Found ${data.n.length} participants. Loading...`;
-      // Encode and launch via hash
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-      location.hash = encoded;
+      status.className = 'url-status';
+      status.textContent = '';
+      launchSolver(data);
     })
     .catch(err => {
-      btn.disabled = false;
-      btn.classList.remove('loading');
       status.className = 'url-status error';
       status.textContent = 'Network error. Check your connection and try again.';
     });
+}
+
+function fetchFromUrl() {
+  const input = document.getElementById('w2mUrl');
+  const status = document.getElementById('urlStatus');
+  const btn = document.getElementById('urlGo');
+  const url = input.value.trim();
+
+  if (!url) { input.focus(); return; }
+
+  // Extract the When2Meet ID from the URL
+  const match = url.match(/when2meet\.com\/?\?(\d+-\w+)/i);
+  if (!match) {
+    status.className = 'url-status error';
+    status.textContent = 'Not a When2Meet link. Expected: when2meet.com/?12345-XXXXX';
+    return;
+  }
+
+  // Redirect to shareable URL with just the ID
+  const id = match[1];
+  window.location.href = `${location.origin}${location.pathname}?${id}`;
 }
 
 // Allow Enter key in URL input
@@ -2593,7 +2607,8 @@ document.querySelectorAll('.seg-btns').forEach(group => {
 });
 
 function goHome() {
-  location.hash = '';
+  // Clear URL to base path (removes both query string and hash)
+  history.pushState(null, '', location.pathname);
   document.getElementById('solver').classList.remove('active');
   document.getElementById('landing').classList.remove('hidden');
   document.getElementById('w2mUrl').value = '';
@@ -2608,11 +2623,19 @@ function goHome() {
 function init() {
   animateHeroViz();
 
-  const raw = decodeHash();
-  if (raw) {
-    launchSolver(raw);
+  // Check for When2Meet ID in query string (e.g., ?33962024-xkJAZ)
+  const w2mId = parseW2MId();
+  if (w2mId) {
+    fetchById(w2mId);
+  } else {
+    // Fall back to hash for demos and backwards compatibility
+    const raw = decodeHash();
+    if (raw) {
+      launchSolver(raw);
+    }
   }
 
+  // Keep hashchange listener for demo data
   window.addEventListener('hashchange', () => {
     const raw = decodeHash();
     if (raw) launchSolver(raw);
