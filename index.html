@@ -760,7 +760,7 @@ function processData(raw) {
   const idMap = {};
   for (let i = 0; i < STATE.numPeople; i++) idMap[STATE.ids[i]] = STATE.names[i];
 
-  // Parse timestamps (When2Meet uses UTC time as local time, fake 1978 dates)
+  // Parse timestamps in browser's local timezone (matches When2Meet behavior)
   // Group by day-of-week
   const daySlots = {};
   const allSlots = [];
@@ -768,12 +768,13 @@ function processData(raw) {
   for (let i = 0; i < STATE.times.length; i++) {
     const ts = STATE.times[i];
     const dt = new Date(ts * 1000);
-    const utcDay = dt.getUTCDay();
-    const utcH = dt.getUTCHours();
-    const utcM = dt.getUTCMinutes();
-    const dayKey = dt.toISOString().slice(0,10); // unique date key
+    const day = dt.getDay();
+    const h = dt.getHours();
+    const m = dt.getMinutes();
+    // Format local date as YYYY-MM-DD for grouping
+    const dayKey = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 
-    if (!daySlots[dayKey]) daySlots[dayKey] = { day: utcDay, date: dayKey, slots: [] };
+    if (!daySlots[dayKey]) daySlots[dayKey] = { day, date: dayKey, slots: [] };
 
     const availNames = [];
     const availIds = STATE.available[i] || [];
@@ -782,10 +783,10 @@ function processData(raw) {
     }
 
     const slotObj = {
-      idx: i, h: utcH, m: utcM, day: utcDay, dayKey,
+      idx: i, h, m, day, dayKey,
       available: new Set(availNames),
-      label: formatTime(utcH, utcM),
-      isHour: utcM === 0,
+      label: formatTime(h, m),
+      isHour: m === 0,
     };
     daySlots[dayKey].slots.push(slotObj);
     allSlots.push(slotObj);
@@ -796,14 +797,14 @@ function processData(raw) {
   STATE.days = sortedDayKeys;
 
   // Detect event type: 1978 = recurring (day-of-week), else = specific dates
-  const firstYear = new Date(STATE.times[0] * 1000).getUTCFullYear();
+  const firstYear = new Date(STATE.times[0] * 1000).getFullYear();
   STATE.isRecurring = firstYear === 1978;
   const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   STATE.dayNames = sortedDayKeys.map(k => {
     const ds = daySlots[k];
     if (STATE.isRecurring) return DAY_LABELS[ds.day];
-    const dt = new Date(k + 'T00:00:00Z');
-    return DAY_LABELS[ds.day] + ' ' + MONTH_SHORT[dt.getUTCMonth()] + ' ' + dt.getUTCDate();
+    const dt = new Date(k + 'T00:00:00');
+    return DAY_LABELS[ds.day] + ' ' + MONTH_SHORT[dt.getMonth()] + ' ' + dt.getDate();
   });
   STATE.dayMap = daySlots;
   STATE.slots = allSlots;
