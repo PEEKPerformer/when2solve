@@ -256,6 +256,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .plan-dismiss{position:absolute;top:.9rem;right:.9rem;background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .2s;line-height:1}
 .plan-dismiss:hover{color:#ef4444;background:rgba(239,68,68,0.06)}
 @media(max-width:580px){.plan-meetings{grid-template-columns:1fr}.plan-connector{padding:0;font-size:.75rem}}
+@media(max-width:640px){
+  .heatmap-panel{padding:.6rem}
+  .day-header{font-size:.65rem;padding:.3rem .1rem}
+  .time-label{font-size:.5rem;padding-right:2px}
+  .cell{height:16px}
+  .cell:hover{transform:scaleY(1.3)}
+}
 
 /*── Insights ──*/
 .insights-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem}
@@ -291,7 +298,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .heatmap-inner{display:grid;grid-template-columns:1fr 220px;gap:1rem;align-items:start}
 @media(max-width:900px){.heatmap-inner{grid-template-columns:1fr}}
 .heatmap-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;overflow-x:auto}
-.heatmap-wrapper{min-width:640px;position:relative}
+.heatmap-wrapper{min-width:0;position:relative}
 .heatmap-grid{display:grid;gap:0;position:relative}
 .day-header{text-align:center;padding:.5rem .2rem;font-weight:600;font-size:.88rem;letter-spacing:.03em;color:var(--text-secondary);border-bottom:1px solid var(--border)}
 .time-header{border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:center;padding-bottom:.4rem;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase}
@@ -352,6 +359,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 /* Suppress animations on re-renders to prevent flickering */
 .no-anim .hero-card,.no-anim .plan-card,.no-anim .option-card,.no-anim .insight-item,.no-anim .insights-panel,.no-anim .scenario-panel{animation:none!important;opacity:1!important;transform:none!important}
 
+/*── Focus & Accessibility ──*/
+.seg-btn:focus-visible,.show-more:focus-visible,.heatmap-toggle:focus-visible,.person-row:focus-visible,.team-chip:focus-visible,.scenario-summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
 </style>
 </head>
 <body>
@@ -384,7 +398,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
       </div>
     </div>
 
-    <div class="hero-viz">
+    <div class="hero-viz" aria-hidden="true">
       <div class="viz-window">
         <div class="viz-topbar">
           <span class="viz-dot viz-dot--r"></span>
@@ -531,14 +545,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div class="topbar-center">
       <div class="seg-group">
         <span class="ctrl-label">Duration</span>
-        <div class="seg-btns" id="ctrlDuration">
-          <div class="seg-btn" data-val="1">15m</div>
-          <div class="seg-btn" data-val="2">30m</div>
-          <div class="seg-btn" data-val="3">45m</div>
-          <div class="seg-btn active" data-val="4">1h</div>
-          <div class="seg-btn" data-val="5">1¼h</div>
-          <div class="seg-btn" data-val="6">1½h</div>
-          <div class="seg-btn" data-val="8">2h</div>
+        <div class="seg-btns" id="ctrlDuration" role="radiogroup" aria-label="Meeting duration">
+          <div class="seg-btn" data-val="1" role="radio" aria-checked="false" tabindex="-1">15m</div>
+          <div class="seg-btn" data-val="2" role="radio" aria-checked="false" tabindex="-1">30m</div>
+          <div class="seg-btn" data-val="3" role="radio" aria-checked="false" tabindex="-1">45m</div>
+          <div class="seg-btn active" data-val="4" role="radio" aria-checked="true" tabindex="0">1h</div>
+          <div class="seg-btn" data-val="5" role="radio" aria-checked="false" tabindex="-1">1¼h</div>
+          <div class="seg-btn" data-val="6" role="radio" aria-checked="false" tabindex="-1">1½h</div>
+          <div class="seg-btn" data-val="8" role="radio" aria-checked="false" tabindex="-1">2h</div>
         </div>
       </div>
     </div>
@@ -547,10 +561,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
-  <div id="teamBar" class="team-bar"></div>
+  <div id="teamBar" class="team-bar" role="toolbar" aria-label="Team members — click to require"></div>
   <div id="decisions" class="decisions"></div>
 
-  <div class="heatmap-toggle" id="heatmapToggle" onclick="toggleHeatmap()">&#9656; Explore raw availability</div>
+  <div class="heatmap-toggle" id="heatmapToggle" onclick="toggleHeatmap()" role="button" tabindex="0" aria-expanded="false" aria-controls="heatmapSection" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleHeatmap()}">&#9656; Explore raw availability</div>
   <div class="heatmap-section collapsed" id="heatmapSection">
     <div class="blocked-bar" id="blockedBar">
       <span class="ctrl-label">Blocked</span>
@@ -813,6 +827,20 @@ function processData(raw) {
   STATE.timeLabels = daySlots[sortedDayKeys[0]].slots.map(s => ({
     label: s.label, h: s.h, m: s.m, isHour: s.isHour
   }));
+
+  // Pre-compute caches for getTotalHours() and pcolor()
+  STATE._hoursCache = {};
+  for (const name of STATE.names) {
+    let count = 0;
+    for (const slot of allSlots) {
+      if (slot.available.has(name)) count++;
+    }
+    STATE._hoursCache[name] = count * 0.25;
+  }
+  STATE._colorCache = {};
+  for (let i = 0; i < STATE.names.length; i++) {
+    STATE._colorCache[STATE.names[i]] = PCOLORS[i % PCOLORS.length];
+  }
 }
 
 function formatTime(h, m) {
@@ -828,14 +856,16 @@ function shortTime(h, m) {
 }
 
 function pcolor(name) {
-  const idx = STATE.names.indexOf(name);
-  return PCOLORS[idx % PCOLORS.length];
+  return STATE._colorCache[name] || PCOLORS[0];
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function shortName(name) {
-  if (name.length <= 10) return name;
-  const parts = name.split(' ');
-  return parts[0];
+  const raw = name.length <= 10 ? name : name.split(' ')[0];
+  return esc(raw);
 }
 
 /*═══════════════════════════════════════════════════════════════
@@ -1029,7 +1059,8 @@ function renderGrid() {
 
   const nDays = STATE.days.length;
   const nTimes = STATE.timeLabels.length;
-  grid.style.gridTemplateColumns = `52px repeat(${nDays}, 1fr)`;
+  const labelCol = window.innerWidth <= 640 ? '36px' : '52px';
+  grid.style.gridTemplateColumns = `${labelCol} repeat(${nDays}, 1fr)`;
 
   // Corner + day headers
   const corner = document.createElement('div');
@@ -1112,11 +1143,18 @@ function renderPeople() {
     row.className = 'person-row' + (STATE.required.has(name) ? ' required' : '');
     row.dataset.person = name;
     row.style.position = 'relative';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.setAttribute('aria-label', `${name} — ${h.toFixed(0)} hours. Click to filter, right-click to require`);
 
     row.addEventListener('click', () => toggleFilter(name));
     row.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       toggleRequired(name);
+    });
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFilter(name); }
+      else if (e.key === 'r') { toggleRequired(name); }
     });
 
     row.innerHTML = `
@@ -1130,11 +1168,7 @@ function renderPeople() {
 }
 
 function getTotalHours(name) {
-  let count = 0;
-  for (const slot of STATE.slots) {
-    if (slot.available.has(name)) count++;
-  }
-  return count * 0.25;
+  return STATE._hoursCache[name] || 0;
 }
 
 /*═══════════════════════════════════════════════════════════════
@@ -1227,7 +1261,7 @@ function renderDecisions() {
       if (overflow.length > 0) {
         const moreId = 'moreSingles';
         container.insertAdjacentHTML('beforeend',
-          `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${overflow.length} more option${overflow.length > 1 ? 's' : ''}</div>`);
+          `<div class="show-more" role="button" tabindex="0" onclick="toggleMore('${moreId}', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMore('${moreId}', this)}">&#9656; ${overflow.length} more option${overflow.length > 1 ? 's' : ''}</div>`);
         const moreGrid = document.createElement('div');
         moreGrid.className = 'more-options more-grid';
         moreGrid.id = moreId;
@@ -1254,7 +1288,7 @@ function renderDecisions() {
       if (restPlans.length > 0) {
         const moreId = 'morePlans';
         container.insertAdjacentHTML('beforeend',
-          `<div class="show-more" onclick="toggleMore('${moreId}', this)">&#9656; ${restPlans.length} more plan${restPlans.length > 1 ? 's' : ''}</div>`);
+          `<div class="show-more" role="button" tabindex="0" onclick="toggleMore('${moreId}', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMore('${moreId}', this)}">&#9656; ${restPlans.length} more plan${restPlans.length > 1 ? 's' : ''}</div>`);
         const moreDiv = document.createElement('div');
         moreDiv.className = 'more-options';
         moreDiv.id = moreId;
@@ -1349,7 +1383,7 @@ function renderInsights(container) {
   });
   if (overflow.length > 0) {
     const moreId = 'moreInsights';
-    html += `<div class="show-more" onclick="toggleMore('${moreId}', this, 'insight')">&#9656; ${overflow.length} more insight${overflow.length > 1 ? 's' : ''}</div>`;
+    html += `<div class="show-more" role="button" tabindex="0" onclick="toggleMore('${moreId}', this, 'insight')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMore('${moreId}', this, 'insight')}">&#9656; ${overflow.length} more insight${overflow.length > 1 ? 's' : ''}</div>`;
     html += `<div class="more-options" id="${moreId}">`;
     overflow.forEach(ins => {
       html += `<div class="insight-item"><span class="insight-icon">${ins.icon}</span><span>${ins.text}</span></div>`;
@@ -1375,7 +1409,7 @@ function renderScenarios(container, results, isRerender) {
   const bodyClass = autoExpand ? 'scenario-body open' : 'scenario-body';
 
   let headerText = summary || 'What-if scenarios available';
-  let html = `<div class="scenario-summary" onclick="this.querySelector('.chev').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+  let html = `<div class="scenario-summary" role="button" tabindex="0" aria-expanded="${autoExpand}" onclick="this.querySelector('.chev').classList.toggle('open');this.nextElementSibling.classList.toggle('open');this.setAttribute('aria-expanded',this.nextElementSibling.classList.contains('open'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
     <span class="${chevClass}">&#9656;</span>
     <span class="scenario-badge">WHAT-IF</span>
     <i class="fa-solid fa-flask" style="color:var(--text-muted);font-size:.8rem"></i>
@@ -2227,12 +2261,12 @@ function computeSuggestions(results, bottlenecks) {
   if (allGhostish > 0) {
     let parts = [];
     if (ghosts.length > 0) {
-      parts.push(`<strong>${ghosts.join(', ')}</strong> signed up but didn\u2019t mark any availability`);
+      parts.push(`<strong>${ghosts.map(esc).join(', ')}</strong> signed up but didn\u2019t mark any availability`);
     }
     if (nearGhosts.length > 0) {
       const nearParts = nearGhosts.map(n => {
         const mins = Math.round(getTotalHours(n) * 60);
-        return `${n} (${mins}min)`;
+        return `${esc(n)} (${mins}min)`;
       });
       parts.push(`<strong>${nearParts.join(', ')}</strong> marked less than 1 hour total`);
     }
@@ -2278,8 +2312,8 @@ function computeSuggestions(results, bottlenecks) {
     suggestions.push({
       type: 'extend', priority: 2,
       icon: '<i class="fa-solid fa-arrows-left-right"></i>',
-      title: `${ext.name} is close`,
-      text: `If <strong>${ext.name}</strong> extended <span class="hl">${durStr} ${ext.direction}</span> on ${bestWindow.dayName}, they\u2019d join the best meeting`
+      title: `${esc(ext.name)} is close`,
+      text: `If <strong>${esc(ext.name)}</strong> extended <span class="hl">${durStr} ${ext.direction}</span> on ${bestWindow.dayName}, they\u2019d join the best meeting`
     });
   }
 
@@ -2291,8 +2325,8 @@ function computeSuggestions(results, bottlenecks) {
     suggestions.push({
       type: 'add-slots', priority: 3,
       icon: '<i class="fa-solid fa-plus"></i>',
-      title: `${add.name} needs ${slotStr}`,
-      text: `If <strong>${add.name}</strong> added ${slotStr} ${add.direction} on ${bestWindow.dayName}, they\u2019d join the best meeting`
+      title: `${esc(add.name)} needs ${slotStr}`,
+      text: `If <strong>${esc(add.name)}</strong> added ${slotStr} ${add.direction} on ${bestWindow.dayName}, they\u2019d join the best meeting`
     });
   }
 
@@ -2306,8 +2340,8 @@ function computeSuggestions(results, bottlenecks) {
       suggestions.push({
         type: 'flexible', priority: 4,
         icon: '<i class="fa-solid fa-unlock"></i>',
-        title: `${top.name} is a constraint`,
-        text: `Without <strong>${top.name}</strong>\u2019s constraint, <span class="hl">${top.gain} perfect-attendance windows</span> open`
+        title: `${esc(top.name)} is a constraint`,
+        text: `Without <strong>${esc(top.name)}</strong>\u2019s constraint, <span class="hl">${top.gain} perfect-attendance windows</span> open`
       });
     }
   }
@@ -2330,7 +2364,7 @@ function computeSuggestions(results, bottlenecks) {
 
   // Duplicates — append as a note if present
   if (duplicates.length > 0 && suggestions.length < 4) {
-    const dupNames = duplicates.map(d => `"${d[0]}" / "${d[1]}"`).join(', ');
+    const dupNames = duplicates.map(d => `"${esc(d[0])}" / "${esc(d[1])}"`).join(', ');
     suggestions.push({
       type: 'duplicate', priority: 6,
       icon: '<i class="fa-solid fa-copy"></i>',
@@ -2369,8 +2403,12 @@ function renderTeamBar() {
     const chip = document.createElement('span');
     chip.className = 'team-chip' + (isReq ? ' required' : '');
     chip.dataset.person = name;
+    chip.tabIndex = 0;
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('aria-pressed', isReq);
     chip.title = isReq ? 'Click to un-require' : 'Click to require in all meetings';
     chip.onclick = () => { toggleRequired(name); renderTeamBar(); };
+    chip.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRequired(name); renderTeamBar(); } };
     chip.innerHTML = `<span class="chip-dot" style="background:${pcolor(name)}"></span>
       <span>${shortName(name)}</span><span class="chip-hours">${h.toFixed(0)}h</span>
       ${isReq ? '<span class="chip-req">req</span>' : ''}`;
@@ -2396,6 +2434,7 @@ function toggleHeatmap() {
   STATE.heatmapOpen = !STATE.heatmapOpen;
   const sec = document.getElementById('heatmapSection');
   const tog = document.getElementById('heatmapToggle');
+  tog.setAttribute('aria-expanded', STATE.heatmapOpen);
   if (STATE.heatmapOpen) {
     sec.classList.remove('collapsed');
     tog.innerHTML = '&#9662; Raw availability';
@@ -2475,14 +2514,15 @@ function ttShow(e) {
   people.forEach(n => {
     const chip = document.createElement('span');
     chip.className = 'tt-chip';
-    chip.textContent = shortName(n);
+    chip.textContent = n.length <= 10 ? n : n.split(' ')[0];
     chip.style.background = pcolor(n) + '33';
     chip.style.color = pcolor(n);
     chipsEl.appendChild(chip);
   });
 
   const absent = allNames.filter(n => !people.includes(n));
-  document.getElementById('ttAbsent').textContent = absent.length ? `Missing: ${absent.map(shortName).join(', ')}` : '';
+  const rawShort = n => n.length <= 10 ? n : n.split(' ')[0];
+  document.getElementById('ttAbsent').textContent = absent.length ? `Missing: ${absent.map(rawShort).join(', ')}` : '';
 
   const isBlocked = cell.classList.contains('blocked');
   document.getElementById('ttBlockHint').textContent = isBlocked ? '● BLOCKED — click to unblock' : 'Shift+click to block this slot';
@@ -2596,13 +2636,24 @@ function onConstraintChange() {
   updateSolutions();
 }
 
-// Segmented button click handlers
+// Segmented button click + keyboard handlers (radiogroup pattern)
 document.querySelectorAll('.seg-btns').forEach(group => {
-  group.querySelectorAll('.seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      group.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      onConstraintChange();
+  const btns = [...group.querySelectorAll('.seg-btn')];
+  function activate(btn) {
+    btns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-checked','false'); b.tabIndex = -1; });
+    btn.classList.add('active');
+    btn.setAttribute('aria-checked','true');
+    btn.tabIndex = 0;
+    btn.focus();
+    onConstraintChange();
+  }
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => activate(btn));
+    btn.addEventListener('keydown', e => {
+      const idx = btns.indexOf(btn);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); activate(btns[(idx + 1) % btns.length]); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); activate(btns[(idx - 1 + btns.length) % btns.length]); }
+      else if (e.key === ' ') { e.preventDefault(); activate(btn); }
     });
   });
 });
@@ -2653,6 +2704,14 @@ function init() {
 
 function launchSolver(raw) {
   processData(raw);
+  STATE.dismissed.clear();
+  STATE.heatmapOpen = false;
+  const hSec = document.getElementById('heatmapSection');
+  hSec.classList.add('collapsed');
+  delete hSec.dataset.rendered;
+  const hTog = document.getElementById('heatmapToggle');
+  hTog.innerHTML = '&#9656; Explore raw availability';
+  hTog.setAttribute('aria-expanded', 'false');
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('solver').classList.add('active');
   document.getElementById('participantBadge').textContent = `${STATE.numPeople} participants`;

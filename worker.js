@@ -105,12 +105,12 @@ function parse(html) {
   const rawTitle = titleMatch ? titleMatch[1].trim() : '';
   const eventName = rawTitle.replace(/\s*[-–—]\s*when2meet\s*$/i, '').trim();
 
-  // PeopleNames[N] = 'Name';
+  // PeopleNames[N] = 'Name'; (handles escaped quotes like O\'Brien)
   const names = [];
-  const nameRe = /PeopleNames\[(\d+)\]\s*=\s*'([^']+)'/g;
+  const nameRe = /PeopleNames\[(\d+)\]\s*=\s*'((?:[^'\\]|\\.)*)'/g;
   let m;
   while ((m = nameRe.exec(html))) {
-    names[parseInt(m[1])] = m[2];
+    names[parseInt(m[1])] = m[2].replace(/\\'/g, "'").replace(/\\\\/g, "\\");
   }
 
   // PeopleIDs[N] = 12345;
